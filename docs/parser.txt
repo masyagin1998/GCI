@@ -1,0 +1,57 @@
+unit                    = function_decl*
+
+function_decl           = FUNCTION IDENT formal_parameters_list body
+
+formal_parameters_list  = LPAREN IDENT (COMMA IDENT)* RPAREN
+
+body                    = LBRACE statement* RBRACE
+
+statement               = decl_statement |
+                          assign_statement |
+                          function_call_statement |
+                          if_statement |
+                          while_statement |
+                          return_statement
+
+decl_statement          = LET IDENT EQ assignment_expr SEMI
+
+assign_statement        = variable EQ assignment_expr SEMI
+
+function_call_statement = function_call SEMI
+
+if_statement            = IF LPAREN logical_or_expr RPAREN body ELSE body |
+                          IF LPAREN logical_or_expr RPAREN body
+
+while_statement         = WHILE LPAREN logical_or_expr RPAREN body
+
+return_statement        = RETURN assignment_expr SEMI |
+                          RETURN SEMI
+
+variable                = IDENT (DOT IDENT)*
+
+assignment_expr         = object_literal | logical_or_expr
+
+object_literal          = LBRACE properties_list RBRACE |
+                          LBRACE RBRACE
+properties_list         = property_assignment (COMMA property_assignment)
+property_assignment     = IDENT COLON assignment_expr
+
+logical_or_expr         = logical_and_expr (OR logical_and_expr)*
+logical_and_expr        = eq_expr (AND eq_expr)*
+eq_expr                 = relational_expr (eq_op relationa_expr)?
+eq_op                   = EQEQ | NEQ
+relational_expr         = additive_expr (relational_op additive_expr)?
+relational_op           = LT | GT | LE | GE
+additive_expr           = multiplicative_expr (additive_op multiplicative_expr)*
+additive_op             = PLUS | MINUS
+multiplicative_expr     = left_unary_expr | (multiplicative_op left_unary_expr)*
+multiplicative_op       = MUL | DIV | MOD
+left_unary_expr         = left_unary_op primary_expr | primary_expr
+left_unary_op           = PLUS | MINUS
+primary_expr            = function_call | variable | NUMBER | LPAREN logical_or_expr RPAREN
+
+function_call           = IDENT LPAREN args_list RPAREN |
+                          IDENT LPAREN RPAREN
+args_list               = primary_expr (COMMA primary_expr)*
+
+                         
