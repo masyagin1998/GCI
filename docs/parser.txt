@@ -2,7 +2,8 @@ unit                    = function_decl*
 
 function_decl           = FUNCTION IDENT formal_parameters_list body
 
-formal_parameters_list  = LPAREN IDENT (COMMA IDENT)* RPAREN
+formal_parameters_list  = LPAREN IDENT (COMMA IDENT)* RPAREN |
+                          LPAREN RPAREN
 
 body                    = LBRACE statement* RBRACE
 
@@ -52,6 +53,6 @@ primary_expr            = function_call | variable | NUMBER | LPAREN logical_or_
 
 function_call           = IDENT LPAREN args_list RPAREN |
                           IDENT LPAREN RPAREN
-args_list               = primary_expr (COMMA primary_expr)*
+args_list               = assignment_expr (COMMA assignment_expr)*
 
                          

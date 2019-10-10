@@ -84,7 +84,6 @@ enum TOKEN_TYPE
 
     TOKEN_TYPE_EOF,      /* EOF                 */
     TOKEN_TYPE_UNKNOWN,  /* UNKNOWN TOKEN       */
-    
 };
 
 enum GROUP_TYPE
