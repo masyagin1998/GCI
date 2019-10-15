@@ -1,6 +1,8 @@
 #ifndef AST_H_INCLUDED
 #define AST_H_INCLUDED
 
+#include <stdio.h>
+
 /*
   unit = function_decl*
 */
@@ -12,7 +14,7 @@ struct UNIT_AST
 };
 
 struct UNIT_AST*create_unit_ast(struct FUNCTION_DECL_AST**functions, unsigned functions_len);
-
+void dump_unit_ast_to_file(FILE*f, const struct UNIT_AST*unit);
 void unit_ast_free(struct UNIT_AST*ast);
 
 /*
@@ -29,7 +31,7 @@ struct FUNCTION_DECL_AST
 struct FUNCTION_DECL_AST*create_function_decl_ast(struct IDENT_AST*function_name,
                                                   struct FORMAL_PARAMETERS_LIST_AST*formal_parameters_list,
                                                   struct BODY_AST*body);
-
+void dump_function_decl_ast_to_file(FILE*f, const struct UNIT_AST*unit);
 void function_decl_ast_free(struct FUNCTION_DECL_AST*ast);
 
 /*
@@ -44,7 +46,7 @@ struct FORMAL_PARAMETERS_LIST_AST
 };
 
 struct FORMAL_PARAMETERS_LIST_AST*create_formal_parameters_list_ast(struct IDENT_AST**params, unsigned params_len);
-
+void dump_formal_parameters_list_ast_to_file(FILE*f, const struct UNIT_AST*unit);
 void formal_parameters_list_ast_free(struct FORMAL_PARAMETERS_LIST_AST*ast);
 
 /*
@@ -58,7 +60,7 @@ struct BODY_AST
 };
 
 struct BODY_AST*create_body_ast(struct STMT_AST**stmts, unsigned stmts_len);
-
+void dump_body_ast_to_file(FILE*f, const struct UNIT_AST*unit);
 void body_ast_free(struct BODY_AST*ast);
 
 /*

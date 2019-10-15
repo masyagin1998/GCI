@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "parser.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,10 +130,22 @@ void print_lexer_result(const char*fname, lexer_type_t lexer)
     fclose(f);
 }
 
+void print_parser_result(const char*fname, const struct UNIT_AST*unit)
+{
+    FILE*f = file_open(fname, "w");
+    dump_unit_ast_to_file(f, unit);
+    fclose(f);    
+}
+
 int main(int argc, char**argv)
 {
     struct INTERPRETER_PARAMS params;
-    lexer_type_t lexer;
+    lexer_type_t  lexer;
+    parser_type_t parser;
+
+    enum PARSER_CODES pr;
+
+    struct UNIT_AST*unit;
 
     parse_args(argc, argv, &params);
 
@@ -144,7 +157,20 @@ int main(int argc, char**argv)
         goto end0;
     }
 
+    parser = create_parser();
+    parser_conf(parser, lexer);
+    pr = parser_parse(parser, &unit);
+    if (pr != PARSER_OK) {
+        goto end0;
+    }
 
+    if (params.mode == INTERPRETER_PARSE) {
+        print_parser_result(params.out, unit);
+        goto end1;
+    }
+
+ end1:
+    parser_free(parser);
  end0:
     lexer_free(lexer);    
 
