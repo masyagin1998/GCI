@@ -89,19 +89,19 @@ struct STMT_AST*create_stmt_ast(void*stmt_ptr, enum STMT_TYPE stmt_type)
     case STMT_TYPE_DECL:
         stmt->decl_stmt = stmt_ptr;
         break;
-    case STMT_TYPE_ASSIGN_STMT:
+    case STMT_TYPE_ASSIGN:
         stmt->assign_stmt = stmt_ptr;
         break;
-    case STMT_TYPE_FUNCTION_CALL_STMT:
+    case STMT_TYPE_FUNCTION_CALL:
         stmt->function_call_stmt = stmt_ptr;
         break;
-    case STMT_TYPE_IF_STMT:
+    case STMT_TYPE_IF:
         stmt->if_stmt = stmt_ptr;
         break;
-    case STMT_TYPE_WHILE_STMT:
+    case STMT_TYPE_WHILE:
         stmt->while_stmt = stmt_ptr;
         break;
-    case STMT_TYPE_RETURN_STMT:
+    case STMT_TYPE_RETURN:
         stmt->return_stmt = stmt_ptr;
         break;
     default:
@@ -119,19 +119,19 @@ void stmt_ast_free(struct STMT_AST*ast)
     case STMT_TYPE_DECL:
         decl_stmt_ast_free(ast->decl_stmt);
         break;
-    case STMT_TYPE_ASSIGN_STMT:
+    case STMT_TYPE_ASSIGN:
         assign_stmt_ast_free(ast->assign_stmt);
         break;
-    case STMT_TYPE_FUNCTION_CALL_STMT:
+    case STMT_TYPE_FUNCTION_CALL:
         function_call_stmt_ast_free(ast->function_call_stmt);
         break;
-    case STMT_TYPE_IF_STMT:
+    case STMT_TYPE_IF:
         if_stmt_ast_free(ast->if_stmt);
         break;
-    case STMT_TYPE_WHILE_STMT:
+    case STMT_TYPE_WHILE:
         while_stmt_ast_free(ast->while_stmt);
         break;
-    case STMT_TYPE_RETURN_STMT:
+    case STMT_TYPE_RETURN:
         return_stmt_ast_free(ast->return_stmt);
         break;
     default:
@@ -239,7 +239,9 @@ struct RETURN_STMT_AST*create_return_stmt_ast(struct ASSIGNMENT_EXPR_AST*result)
 
 void return_stmt_ast_free(struct RETURN_STMT_AST*ast)
 {
-    assignment_expr_ast_free(ast->result);
+    if (ast->result != NULL) {
+        assignment_expr_ast_free(ast->result);
+    }
     SAFE_FREE(ast);
 }
 

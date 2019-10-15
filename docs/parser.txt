@@ -20,7 +20,8 @@ assign_statement        = variable EQ assignment_expr SEMI
 
 function_call_statement = function_call SEMI
 
-if_statement            = IF LPAREN logical_or_expr RPAREN body ELSE body |
+if_statement            = IF LPAREN logical_or_expr RPAREN body ELSE if_statement |
+                          IF LPAREN logical_or_expr RPAREN body ELSE body |
                           IF LPAREN logical_or_expr RPAREN body
 
 while_statement         = WHILE LPAREN logical_or_expr RPAREN body
@@ -34,8 +35,8 @@ assignment_expr         = object_literal | logical_or_expr
 
 object_literal          = LBRACE properties_list RBRACE |
                           LBRACE RBRACE
-properties_list         = property_assignment (COMMA property_assignment)
-property_assignment     = IDENT COLON assignment_expr
+properties_list         = property (COMMA property)*
+property                = IDENT COLON assignment_expr
 
 logical_or_expr         = logical_and_expr (OR logical_and_expr)*
 logical_and_expr        = eq_expr (AND eq_expr)*

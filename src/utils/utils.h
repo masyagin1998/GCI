@@ -46,15 +46,21 @@ FILE*file_open(const char*fname, const char*mode);
 /*
   This macro is not safe for expressions!!!
   Use it only for variables!!!
+  Also you need arr_len and arr_val in basic block.
 */
-#define PUSH_BACK(arr, len, cap, val)           \
-    do {                                        \
-        if ((len) == (cap)) {                   \
-            (cap) *= 2;                         \
-            SAFE_REALLOC(arr, cap);             \
-        }                                       \
-        (arr)[(len)] = (val);                   \
-        (len)++;                                \
+#define PUSH_BACK(arr, val)                                     \
+    do {                                                        \
+        if ((arr ## _len) == (arr ## _cap)) {                   \
+            if ((arr ## _cap) == 0) {                           \
+                (arr ## _cap) = 1;                              \
+                SAFE_MALLOC(arr, arr ## _cap);                  \
+            } else {                                            \
+                (arr ## _cap) *= 2;                             \
+                SAFE_REALLOC(arr, arr ## _cap);                 \
+            }                                                   \
+        }                                                       \
+        (arr)[(arr ## _len)] = (val);                           \
+        (arr ## _len)++;                                        \
     } while(0)
 
 #endif  /* UTILS_H_INCLUDED */
