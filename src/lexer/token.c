@@ -63,6 +63,14 @@ int token_read_number(struct TOKEN**tok, const struct POS*pos)
     new_tok->frag.starting = (*pos);
     new_tok->frag.following = p;
 
+    char tmp_str[64];
+    snprintf(tmp_str, sizeof(tmp_str),
+             "%.*s",
+             new_tok->frag.following.index - new_tok->frag.starting.index,
+             new_tok->frag.starting.program + new_tok->frag.starting.index);
+
+    new_tok->int_val = atoll(tmp_str);
+
     (*tok) = new_tok;
 
     return r;

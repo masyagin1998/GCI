@@ -38,6 +38,8 @@ lexer_type_t create_lexer()
 void lexer_conf(lexer_type_t lexer, const char*fname)
 {
     FILE*f;
+
+    unsigned read;
     
     strncpy(lexer->program_name, fname, sizeof(lexer->program_name));
 
@@ -53,7 +55,11 @@ void lexer_conf(lexer_type_t lexer, const char*fname)
 
     SAFE_MALLOC(lexer->program, lexer->program_len + 1);
 
-    fread(lexer->program, sizeof(char), lexer->program_len, f);
+    read = fread(lexer->program, sizeof(char), lexer->program_len, f);
+    if (read != lexer->program_len) {
+        fprintf(stderr, "Unable to read input file \"%s\"", fname);
+        exit(EXIT_FAILURE);
+    }
     lexer->program[lexer->program_len] = '\0';
     
 

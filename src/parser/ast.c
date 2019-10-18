@@ -276,6 +276,7 @@ static void dump_decl_stmt_ast_to_file_inner(FILE*f, const struct DECL_STMT_AST*
     PUT_SPACES(); fprintf(f, "<decl_stmt>\n");
     INC_SPACES_NUM();
     dump_ident_ast_to_file_inner(f, ast->new_var_name, spaces_num);
+    PUT_SPACES(); fprintf(f, "<op>EQ</op>\n");
     dump_assignment_expr_ast_to_file_inner(f, ast->assignment, spaces_num);
     DEC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "</decl_stmt>\n");
@@ -305,6 +306,7 @@ static void dump_assign_stmt_ast_to_file_inner(FILE*f, const struct ASSIGN_STMT_
     PUT_SPACES(); fprintf(f, "<assign_stmt>\n");
     INC_SPACES_NUM();
     dump_variable_ast_to_file_inner(f, ast->var_name, spaces_num);
+    PUT_SPACES(); fprintf(f, "<op>EQ</op>\n");    
     dump_assignment_expr_ast_to_file_inner(f, ast->assignment, spaces_num);
     DEC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "</assign_stmt>\n");
@@ -595,9 +597,25 @@ struct LOGICAL_OR_EXPR_AST*create_logical_or_expr_ast(struct LOGICAL_AND_EXPR_AS
     return logical_or_expr;
 }
 
+static void dump_logical_and_expr_ast_to_file_inner(FILE*f, const struct LOGICAL_AND_EXPR_AST*ast, unsigned spaces_num);
+
 static void dump_logical_or_expr_ast_to_file_inner(FILE*f, const struct LOGICAL_OR_EXPR_AST*ast, unsigned spaces_num)
 {
-    
+    if (ast->and_exprs_len == 1) {
+        dump_logical_and_expr_ast_to_file_inner(f, ast->and_exprs[0], spaces_num);
+    } else {
+        unsigned i;
+        
+        PUT_SPACES(); fprintf(f, "<logical_or_expr>\n");
+        INC_SPACES_NUM();
+        dump_logical_and_expr_ast_to_file_inner(f, ast->and_exprs[0], spaces_num);
+        for (i = 1; i < ast->and_exprs_len; i++) {
+            PUT_SPACES(); fprintf(f, "<op>OR</op>\n");
+            dump_logical_and_expr_ast_to_file_inner(f, ast->and_exprs[i], spaces_num);
+        }
+        DEC_SPACES_NUM();
+        PUT_SPACES(); fprintf(f, "</logical_or_expr>\n");        
+    }
 }
 
 void logical_or_expr_ast_free(struct LOGICAL_OR_EXPR_AST*ast)
@@ -617,6 +635,27 @@ struct LOGICAL_AND_EXPR_AST*create_logical_and_expr_ast(struct EQ_EXPR_AST**eq_e
     logical_and_expr->eq_exprs = eq_exprs;
     logical_and_expr->eq_exprs_len = eq_exprs_len;
     return logical_and_expr;
+}
+
+static void dump_eq_expr_ast_to_file_inner(FILE*f, const struct EQ_EXPR_AST*ast, unsigned spaces_num);
+
+static void dump_logical_and_expr_ast_to_file_inner(FILE*f, const struct LOGICAL_AND_EXPR_AST*ast, unsigned spaces_num)
+{
+    if (ast->eq_exprs_len == 1) {
+        dump_eq_expr_ast_to_file_inner(f, ast->eq_exprs[0], spaces_num);
+    } else {
+        unsigned i;
+        
+        PUT_SPACES(); fprintf(f, "<logical_and_expr>\n");
+        INC_SPACES_NUM();
+        dump_eq_expr_ast_to_file_inner(f, ast->eq_exprs[0], spaces_num);
+        for (i = 1; i < ast->eq_exprs_len; i++) {
+            PUT_SPACES(); fprintf(f, "<op>AND</op>\n");
+            dump_eq_expr_ast_to_file_inner(f, ast->eq_exprs[i], spaces_num);
+        }
+        DEC_SPACES_NUM();
+        PUT_SPACES(); fprintf(f, "</logical_and_expr>\n");        
+    }
 }
 
 void logical_and_expr_ast_free(struct LOGICAL_AND_EXPR_AST*ast)
@@ -641,6 +680,27 @@ struct EQ_EXPR_AST*create_eq_expr_ast(struct RELATIONAL_EXPR_AST*left,
     return eq_expr;
 }
 
+static void dump_relational_expr_ast_to_file_inner(FILE*f, const struct RELATIONAL_EXPR_AST*ast, unsigned spaces_num);
+
+static void dump_eq_expr_ast_to_file_inner(FILE*f, const struct EQ_EXPR_AST*ast, unsigned spaces_num)
+{
+    if (ast->right == NULL) {
+        dump_relational_expr_ast_to_file_inner(f, ast->left, spaces_num);
+    } else {
+        PUT_SPACES(); fprintf(f, "<eq_expr>\n");
+        INC_SPACES_NUM();
+        dump_relational_expr_ast_to_file_inner(f, ast->left, spaces_num);
+        if (ast->eq_op == EQEQ) {
+            PUT_SPACES(); fprintf(f, "<op>EQEQ</op>\n");
+        } else if (ast->eq_op == NEQ) {
+            PUT_SPACES(); fprintf(f, "<op>NEQ</op>\n");
+        }
+        dump_relational_expr_ast_to_file_inner(f, ast->right, spaces_num);
+        DEC_SPACES_NUM();
+        PUT_SPACES(); fprintf(f, "</eq_expr>\n");
+    }
+}
+
 void eq_expr_ast_free(struct EQ_EXPR_AST*ast)
 {
     relational_expr_ast_free(ast->left);
@@ -660,6 +720,31 @@ struct RELATIONAL_EXPR_AST*create_relational_expr_ast(struct ADDITIVE_EXPR_AST*l
     relational_expr->rel_op = rel_op;
     relational_expr->right = right;
     return relational_expr;
+}
+
+static void dump_additive_expr_ast_to_file_inner(FILE*f, const struct ADDITIVE_EXPR_AST*ast, unsigned spaces_num);
+
+static void dump_relational_expr_ast_to_file_inner(FILE*f, const struct RELATIONAL_EXPR_AST*ast, unsigned spaces_num)
+{
+    if (ast->right == NULL) {
+        dump_additive_expr_ast_to_file_inner(f, ast->left, spaces_num);
+    } else {
+        PUT_SPACES(); fprintf(f, "<relational_expr>\n");
+        INC_SPACES_NUM();
+        dump_additive_expr_ast_to_file_inner(f, ast->left, spaces_num);
+        if (ast->rel_op == LT) {
+            PUT_SPACES(); fprintf(f, "<op>LT</op>\n");
+        } else if (ast->rel_op == GT) {
+            PUT_SPACES(); fprintf(f, "<op>GT</op>\n");
+        } else if (ast->rel_op == LE) {
+            PUT_SPACES(); fprintf(f, "<op>LE</op>\n");
+        } else if (ast->rel_op == GE) {
+            PUT_SPACES(); fprintf(f, "<op>GE</op>\n");
+        }
+        dump_additive_expr_ast_to_file_inner(f, ast->right, spaces_num);
+        DEC_SPACES_NUM();
+        PUT_SPACES(); fprintf(f, "</relational_expr>\n");
+    }
 }
 
 void relational_expr_ast_free(struct RELATIONAL_EXPR_AST*ast)
@@ -694,6 +779,31 @@ void additive_expr_ast_free(struct ADDITIVE_EXPR_AST*ast)
     SAFE_FREE(ast);
 }
 
+static void dump_multiplicative_expr_ast_to_file_inner(FILE*f, const struct MULTIPLICATIVE_EXPR_AST*ast, unsigned spaces_num);
+
+static void dump_additive_expr_ast_to_file_inner(FILE*f, const struct ADDITIVE_EXPR_AST*ast, unsigned spaces_num)
+{
+    if (ast->muls_len == 1) {
+        dump_multiplicative_expr_ast_to_file_inner(f, ast->muls[0], spaces_num);
+    } else {
+        unsigned i;
+        
+        PUT_SPACES(); fprintf(f, "<additive_expr>\n");
+        INC_SPACES_NUM();
+        dump_multiplicative_expr_ast_to_file_inner(f, ast->muls[0], spaces_num);
+        for (i = 1; i < ast->muls_len; i++) {
+            if (ast->ops[i - 1] == PLUS) {
+                PUT_SPACES(); fprintf(f, "<op>PLUS</op>\n");
+            } else if (ast->ops[i - 1] == MINUS) {
+                PUT_SPACES(); fprintf(f, "<op>MINUS</op>\n");
+            }
+            dump_multiplicative_expr_ast_to_file_inner(f, ast->muls[i], spaces_num);
+        }
+        DEC_SPACES_NUM();
+        PUT_SPACES(); fprintf(f, "</additive_expr>\n");        
+    }
+}
+
 struct MULTIPLICATIVE_EXPR_AST*create_multiplicative_expr_ast(struct LEFT_UNARY_EXPR_AST**lues,
                                                               enum MULTIPLICATIVE_OP*ops,
                                                               unsigned lues_len)
@@ -704,6 +814,33 @@ struct MULTIPLICATIVE_EXPR_AST*create_multiplicative_expr_ast(struct LEFT_UNARY_
     mul_expr->ops = ops;
     mul_expr->lues_len = lues_len;
     return mul_expr;
+}
+
+static void dump_left_unary_expr_ast_to_file_inner(FILE*f, const struct LEFT_UNARY_EXPR_AST*ast, unsigned spaces_num);
+
+static void dump_multiplicative_expr_ast_to_file_inner(FILE*f, const struct MULTIPLICATIVE_EXPR_AST*ast, unsigned spaces_num)
+{
+    if (ast->lues_len == 1) {
+        dump_left_unary_expr_ast_to_file_inner(f, ast->lues[0], spaces_num);
+    } else {
+        unsigned i;
+        
+        PUT_SPACES(); fprintf(f, "<multiplicative_expr>\n");
+        INC_SPACES_NUM();
+        dump_left_unary_expr_ast_to_file_inner(f, ast->lues[0], spaces_num);
+        for (i = 1; i < ast->lues_len; i++) {
+            if (ast->ops[i - 1] == MUL) {
+                PUT_SPACES(); fprintf(f, "<op>MUL</op>\n");
+            } else if (ast->ops[i - 1] == DIV) {
+                PUT_SPACES(); fprintf(f, "<op>DIV</op>\n");
+            } else if (ast->ops[i - 1] == MOD) {
+                PUT_SPACES(); fprintf(f, "<op>MOD</op>\n");
+            }
+            dump_left_unary_expr_ast_to_file_inner(f, ast->lues[i], spaces_num);
+        }
+        DEC_SPACES_NUM();
+        PUT_SPACES(); fprintf(f, "</multiplicative_expr>\n");
+    }
 }
 
 void multiplicative_expr_ast_free(struct MULTIPLICATIVE_EXPR_AST*ast)
@@ -724,6 +861,22 @@ struct LEFT_UNARY_EXPR_AST*create_left_unary_expr_ast(enum LEFT_UNARY_EXPR_OP op
     lue->op = op;
     lue->expr = expr;
     return lue;
+}
+
+static void dump_primary_expr_ast_to_file_inner(FILE*f, const struct PRIMARY_EXPR_AST*ast, unsigned spaces_num);
+
+static void dump_left_unary_expr_ast_to_file_inner(FILE*f, const struct LEFT_UNARY_EXPR_AST*ast, unsigned spaces_num)
+{
+    if (ast->op != UNARY_PLUS) {
+        PUT_SPACES(); fprintf(f, "<left_unary_expr>\n");
+        INC_SPACES_NUM();
+        PUT_SPACES(); fprintf(f, "<op>UNARY_MINUS</op>\n");
+        dump_primary_expr_ast_to_file_inner(f, ast->expr, spaces_num);
+        DEC_SPACES_NUM();
+        PUT_SPACES(); fprintf(f, "</left_unary_expr>\n");
+    } else {
+        dump_primary_expr_ast_to_file_inner(f, ast->expr, spaces_num);
+    }
 }
 
 void left_unary_expr_ast_free(struct LEFT_UNARY_EXPR_AST*ast)
@@ -758,6 +911,30 @@ struct PRIMARY_EXPR_AST*create_primary_expr_ast(void*primary_expr_ptr, enum PRIM
     return primary_expr;
 }
 
+static void dump_number_ast_to_file_inner(FILE*f, const struct NUMBER_AST*ast, unsigned spaces_num);
+
+static void dump_primary_expr_ast_to_file_inner(FILE*f, const struct PRIMARY_EXPR_AST*ast, unsigned spaces_num)
+{
+    switch (ast->type) {
+    case PRIMARY_EXPR_TYPE_FUNCTION_CALL:
+        dump_function_call_ast_to_file_inner(f, ast->function_call, spaces_num);
+        break;
+    case PRIMARY_EXPR_TYPE_VARIABLE:
+        dump_variable_ast_to_file_inner(f, ast->var_name, spaces_num);
+        break;
+    case PRIMARY_EXPR_TYPE_NUMBER:
+        dump_number_ast_to_file_inner(f, ast->number, spaces_num);
+        break;
+    case PRIMARY_EXPR_TYPE_LOGICAL_EXPR:
+        dump_logical_or_expr_ast_to_file_inner(f, ast->logical_or_expr, spaces_num);
+        break;
+    default:
+        fprintf(stderr, "Invalid PRIMARY_EXPR_AST type: %d\n", ast->type);
+        exit(EXIT_FAILURE);                
+        break;
+    }
+}
+
 void primary_expr_ast_free(struct PRIMARY_EXPR_AST*ast)
 {
     switch (ast->type) {
@@ -777,7 +954,7 @@ void primary_expr_ast_free(struct PRIMARY_EXPR_AST*ast)
         fprintf(stderr, "Invalid PRIMARY_EXPR_AST type: %d\n", ast->type);
         exit(EXIT_FAILURE);                
         break;
-    }    
+    }
     SAFE_FREE(ast);
 }
 
@@ -871,6 +1048,11 @@ struct NUMBER_AST*create_number_ast(long long number)
     SAFE_MALLOC(number_ast, 1);
     number_ast->number = number;
     return number_ast;
+}
+
+static void dump_number_ast_to_file_inner(FILE*f, const struct NUMBER_AST*ast, unsigned spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<number>%lld</number>\n", ast->number);
 }
 
 void number_ast_free(struct NUMBER_AST*ast)

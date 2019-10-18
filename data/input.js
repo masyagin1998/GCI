@@ -1,4 +1,5 @@
-function fizz(a, b, c) {
-}
-function buzz(c, d, e, f) {
+function fizz() {
+    a = {
+        f: 2,
+    };
 }

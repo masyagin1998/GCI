@@ -104,7 +104,7 @@ struct TOKEN
 
     union
     {
-        int    int_val;
+        long long int_val;
         double double_val;
         char   str_val[32];
     };

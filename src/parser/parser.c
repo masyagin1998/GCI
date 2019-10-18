@@ -230,6 +230,10 @@ static enum PARSER_CODES primary_expr_ast_read(struct PRIMARY_EXPR_AST**primary_
             
         }
 
+        /* no check, because it could be only TOKEN_TYPE_RPAREN. */
+        token_free((*tok));
+        lexer_next_token(lexer, tok);
+
         (*primary_expr) = create_primary_expr_ast(logical_or_expr, PRIMARY_EXPR_TYPE_LOGICAL_EXPR);
         
         break;
@@ -386,6 +390,9 @@ static enum PARSER_CODES relational_expr_ast_read(struct RELATIONAL_EXPR_AST**re
             rel_op = GE;
         }
 
+        token_free((*tok));
+        lexer_next_token(lexer, tok);        
+
         r = additive_expr_ast_read(&right, lexer, tok);
         if (r != PARSER_OK) {
             
@@ -410,12 +417,15 @@ static enum PARSER_CODES eq_expr_ast_read(struct EQ_EXPR_AST**eq_expr, lexer_typ
         
     }
 
-    if (((*tok)->token_type == TOKEN_TYPE_EQ) || ((*tok)->token_type == TOKEN_TYPE_NEQ)) {
-        if ((*tok)->token_type == TOKEN_TYPE_EQ) {
+    if (((*tok)->token_type == TOKEN_TYPE_EQEQ) || ((*tok)->token_type == TOKEN_TYPE_NEQ)) {
+        if ((*tok)->token_type == TOKEN_TYPE_EQEQ) {
             eq_op = EQEQ;
         } else if ((*tok)->token_type == TOKEN_TYPE_NEQ) {
             eq_op = NEQ;
         }
+
+        token_free((*tok));
+        lexer_next_token(lexer, tok);
 
         r = relational_expr_ast_read(&right, lexer, tok);
         if (r != PARSER_OK) {
@@ -545,8 +555,7 @@ static enum PARSER_CODES object_literal_ast_read(struct OBJECT_LITERAL_AST**obje
         PUSH_BACK(properties, property);
 
         if ((*tok)->token_type != TOKEN_TYPE_COMMA) {
-            r = PARSER_INVALID_TOKEN;
-            goto err0;
+            break;
         }
         token_free((*tok));
         lexer_next_token(lexer, tok);
@@ -557,9 +566,6 @@ static enum PARSER_CODES object_literal_ast_read(struct OBJECT_LITERAL_AST**obje
     lexer_next_token(lexer, tok);
 
     (*object_literal) = create_object_literal_ast(properties, properties_len);
-
-    token_free((*tok));
-    lexer_next_token(lexer, tok);    
 
     return PARSER_OK;
 
@@ -634,6 +640,8 @@ static enum PARSER_CODES decl_stmt_ast_read(struct DECL_STMT_AST**decl_stmt, lex
     token_free((*tok));
     lexer_next_token(lexer, tok);
 
+    (*decl_stmt) = create_decl_stmt_ast(var_name, assignment_expr);
+
     return PARSER_OK;
 
  err2:
@@ -661,7 +669,7 @@ static enum PARSER_CODES body_ast_read(struct BODY_AST**body, lexer_type_t lexer
 
 static enum PARSER_CODES if_stmt_ast_read(struct IF_STMT_AST**if_stmt, lexer_type_t lexer, struct TOKEN**tok)
 {
-
+    
 }
 
 static enum PARSER_CODES while_stmt_ast_read(struct WHILE_STMT_AST**while_stmt, lexer_type_t lexer, struct TOKEN**tok)
@@ -778,15 +786,13 @@ static enum PARSER_CODES stmt_ast_read(struct STMT_AST**stmt, lexer_type_t lexer
             /* no check, because it could be only TOKEN_TYPE_EQ. */            
             token_free((*tok));
             lexer_next_token(lexer, tok);
+            
             /* reading assignment expr. */
             r = assignment_expr_ast_read(&assignment_expr, lexer, tok);
             if (r != PARSER_OK) {
                 variable_ast_free(var_name);
                 goto err0;
-            }
-
-            token_free((*tok));
-            lexer_next_token(lexer, tok);
+            }          
 
             assign_stmt = create_assign_stmt_ast(var_name, assignment_expr);
             (*stmt) = create_stmt_ast(assign_stmt, STMT_TYPE_ASSIGN);
