@@ -119,6 +119,10 @@ static enum PARSER_CODES args_list_ast_read(struct ARGS_LIST_AST**args_list, lex
     struct ASSIGNMENT_EXPR_AST**assignment_exprs = NULL;
     unsigned assignment_exprs_len = 0;
     unsigned assignment_exprs_cap = 0;
+
+    /* no check, because it could be only TOKEN_TYPE_LPAREN. */
+    token_free((*tok));
+    lexer_next_token(lexer, tok);    
     
     while ((*tok)->token_type != TOKEN_TYPE_RPAREN) {
         struct ASSIGNMENT_EXPR_AST*assignment_expr;
@@ -126,15 +130,23 @@ static enum PARSER_CODES args_list_ast_read(struct ARGS_LIST_AST**args_list, lex
         if (r != PARSER_OK) {
             
         }
+
         PUSH_BACK(assignment_exprs, assignment_expr);
 
+        if ((*tok)->token_type == TOKEN_TYPE_RPAREN) {
+            break;
+        }
+
         if ((*tok)->token_type != TOKEN_TYPE_COMMA) {
-            r = PARSER_INVALID_TOKEN;
             
         }
         token_free((*tok));
         lexer_next_token(lexer, tok);
     }
+
+    /* no check, because it could be only TOKEN_TYPE_RPAREN. */
+    token_free((*tok));
+    lexer_next_token(lexer, tok);
 
     (*args_list) = create_args_list_ast(assignment_exprs, assignment_exprs_len);
 
@@ -151,10 +163,6 @@ static enum PARSER_CODES function_call_ast_read(struct FUNCTION_CALL_AST**functi
     if (r != PARSER_OK) {
         
     }
-    
-    /* no check, because it could be only TOKEN_TYPE_RPAREN. */
-    token_free((*tok));
-    lexer_next_token(lexer, tok);
     
     (*function_call) = create_function_call_ast(function_name, args_list);
 
@@ -554,8 +562,12 @@ static enum PARSER_CODES object_literal_ast_read(struct OBJECT_LITERAL_AST**obje
         }
         PUSH_BACK(properties, property);
 
-        if ((*tok)->token_type != TOKEN_TYPE_COMMA) {
+        if ((*tok)->token_type == TOKEN_TYPE_RBRACE) {
             break;
+        }
+
+        if ((*tok)->token_type != TOKEN_TYPE_COMMA) {
+            
         }
         token_free((*tok));
         lexer_next_token(lexer, tok);
