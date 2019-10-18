@@ -67,6 +67,10 @@ static enum PARSER_CODES formal_parameters_list_ast_read(struct FORMAL_PARAMETER
     struct IDENT_AST**idents = NULL;
     unsigned idents_len = 0;
     unsigned idents_cap = 0;
+
+    /* no check, because it could be only TOKEN_TYPE_LPAREN. */
+    token_free((*tok));
+    lexer_next_token(lexer, tok);
     
     while ((*tok)->token_type != TOKEN_TYPE_RPAREN) {
         struct IDENT_AST*ident;
@@ -76,13 +80,20 @@ static enum PARSER_CODES formal_parameters_list_ast_read(struct FORMAL_PARAMETER
         }
         PUSH_BACK(idents, ident);
 
+        if ((*tok)->token_type == TOKEN_TYPE_RPAREN) {
+            break;
+        }
+
         if ((*tok)->token_type != TOKEN_TYPE_COMMA) {
             r = PARSER_INVALID_TOKEN;
-            
         }
         token_free((*tok));
         lexer_next_token(lexer, tok);
     }
+
+    /* no check, because it could be only TOKEN_TYPE_RPAREN. */
+    token_free((*tok));
+    lexer_next_token(lexer, tok);
 
     (*formal_parameters_list) = create_formal_parameters_list_ast(idents, idents_len);
 
@@ -907,9 +918,6 @@ static enum PARSER_CODES body_ast_read(struct BODY_AST**body, lexer_type_t lexer
 
     (*body) = create_body_ast(stmts, stmts_len);
 
-    token_free((*tok));
-    lexer_next_token(lexer, tok);
-
     return PARSER_OK;
 
  err1:
@@ -943,6 +951,7 @@ static enum PARSER_CODES function_decl_ast_read(struct FUNCTION_DECL_AST**functi
     if (r != PARSER_OK) {
         goto err0;
     }
+    
     r = formal_parameters_list_ast_read(&formal_parameters_list, lexer, tok);
     if (r != PARSER_OK) {
         goto err1;

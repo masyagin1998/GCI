@@ -85,6 +85,11 @@ void token_read_ident(struct TOKEN**tok,  const struct POS*pos)
     new_tok->frag.starting = (*pos);
     new_tok->frag.following = p;
 
+    snprintf(new_tok->str_val, sizeof(new_tok->str_val),
+             "%.*s",
+             new_tok->frag.following.index - new_tok->frag.starting.index,
+             new_tok->frag.starting.program + new_tok->frag.starting.index);
+
     (*tok) = new_tok;
 }
 

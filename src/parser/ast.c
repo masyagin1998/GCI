@@ -4,6 +4,21 @@
 
 #include <string.h>
 
+#define INC_SPACES_NUM()                        \
+    do {                                        \
+        spaces_num += 2;                        \
+    } while(0)
+
+#define DEC_SPACES_NUM()                        \
+    do {                                        \
+        spaces_num -= 2;                        \
+    } while(0)
+
+#define PUT_SPACES()                            \
+    do {                                        \
+        fprintf(f, "%*s", spaces_num, "");      \
+    } while(0)
+
 struct UNIT_AST*create_unit_ast(struct FUNCTION_DECL_AST**functions, unsigned functions_len)
 {
     struct UNIT_AST*unit_ast;
@@ -11,6 +26,22 @@ struct UNIT_AST*create_unit_ast(struct FUNCTION_DECL_AST**functions, unsigned fu
     unit_ast->functions = functions;
     unit_ast->functions_len = functions_len;
     return unit_ast;
+}
+
+static void dump_function_decl_ast_to_file_inner(FILE*f, const struct FUNCTION_DECL_AST*ast, unsigned spaces_num);
+
+void dump_unit_ast_to_file(FILE*f, const struct UNIT_AST*ast)
+{
+    unsigned i;
+    unsigned spaces_num = 0;
+
+    fprintf(f, "<unit>\n");
+    INC_SPACES_NUM();
+    for (i = 0; i < ast->functions_len; i++) {
+        dump_function_decl_ast_to_file_inner(f, ast->functions[i], spaces_num);
+    }
+    DEC_SPACES_NUM();
+    fprintf(f, "</unit>\n");    
 }
 
 void unit_ast_free(struct UNIT_AST*ast)
@@ -35,6 +66,29 @@ struct FUNCTION_DECL_AST*create_function_decl_ast(struct IDENT_AST*function_name
     return function_ast;
 }
 
+static void dump_ident_ast_to_file_inner(FILE*f, const struct IDENT_AST*ast, unsigned spaces_num);
+static void dump_formal_parameters_list_ast_to_file_inner(FILE*f, const struct FORMAL_PARAMETERS_LIST_AST*ast, unsigned spaces_num);
+static void dump_body_ast_to_file_inner(FILE*f, const struct BODY_AST*ast, unsigned spaces_num);
+
+static void dump_function_decl_ast_to_file_inner(FILE*f, const struct FUNCTION_DECL_AST*ast, unsigned spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<function>\n");
+
+    INC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "<function_name>\n");
+    INC_SPACES_NUM();
+    dump_ident_ast_to_file_inner(f, ast->function_name, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</function_name>\n");
+
+    dump_formal_parameters_list_ast_to_file_inner(f, ast->formal_parameters_list, spaces_num);
+    
+    dump_body_ast_to_file_inner(f, ast->body, spaces_num);
+    DEC_SPACES_NUM();
+
+    PUT_SPACES(); fprintf(f, "</function>\n\n");
+}
+
 void function_decl_ast_free(struct FUNCTION_DECL_AST*ast)
 {
     ident_ast_free(ast->function_name);
@@ -50,6 +104,19 @@ struct FORMAL_PARAMETERS_LIST_AST*create_formal_parameters_list_ast(struct IDENT
     formal_parameters_list->params = params;
     formal_parameters_list->params_len = params_len;
     return formal_parameters_list;
+}
+
+static void dump_formal_parameters_list_ast_to_file_inner(FILE*f, const struct FORMAL_PARAMETERS_LIST_AST*ast, unsigned spaces_num)
+{
+    unsigned i;
+    
+    PUT_SPACES(); fprintf(f, "<formal_parameters_list>\n");
+    INC_SPACES_NUM();
+    for (i = 0; i < ast->params_len; i++) {
+        dump_ident_ast_to_file_inner(f, ast->params[i], spaces_num);
+    }
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</formal_parameters_list>\n");
 }
 
 void formal_parameters_list_ast_free(struct FORMAL_PARAMETERS_LIST_AST*ast)
@@ -69,6 +136,21 @@ struct BODY_AST*create_body_ast(struct STMT_AST**stmts, unsigned stmts_len)
     body->stmts = stmts;
     body->stmts_len = stmts_len;
     return body;
+}
+
+static void dump_stmt_ast_to_file_inner(FILE*f, const struct STMT_AST*ast, unsigned spaces_num);
+
+static void dump_body_ast_to_file_inner(FILE*f, const struct BODY_AST*ast, unsigned spaces_num)
+{
+    unsigned i;
+    
+    PUT_SPACES(); fprintf(f, "<body>\n");
+    INC_SPACES_NUM();
+    for (i = 0; i < ast->stmts_len; i++) {
+        dump_stmt_ast_to_file_inner(f, ast->stmts[i], spaces_num);
+    }
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</body>\n");
 }
 
 void body_ast_free(struct BODY_AST*ast)
@@ -113,6 +195,41 @@ struct STMT_AST*create_stmt_ast(void*stmt_ptr, enum STMT_TYPE stmt_type)
     return stmt;
 }
 
+static void dump_decl_stmt_ast_to_file_inner(FILE*f, const struct DECL_STMT_AST*ast, unsigned spaces_num);
+static void dump_assign_stmt_ast_to_file_inner(FILE*f, const struct ASSIGN_STMT_AST*ast, unsigned spaces_num);
+static void dump_function_call_stmt_ast_to_file_inner(FILE*f, const struct FUNCTION_CALL_STMT_AST*ast, unsigned spaces_num);
+static void dump_if_stmt_ast_to_file_inner(FILE*f, const struct IF_STMT_AST*ast, unsigned spaces_num);
+static void dump_while_stmt_ast_to_file_inner(FILE*f, const struct WHILE_STMT_AST*ast, unsigned spaces_num);
+static void dump_return_stmt_ast_to_file_inner(FILE*f, const struct RETURN_STMT_AST*ast, unsigned spaces_num);
+
+static void dump_stmt_ast_to_file_inner(FILE*f, const struct STMT_AST*ast, unsigned spaces_num)
+{
+    switch (ast->type) {
+    case STMT_TYPE_DECL:
+        dump_decl_stmt_ast_to_file_inner(f, ast->decl_stmt, spaces_num);
+        break;
+    case STMT_TYPE_ASSIGN:
+        dump_assign_stmt_ast_to_file_inner(f, ast->assign_stmt, spaces_num);
+        break;
+    case STMT_TYPE_FUNCTION_CALL:
+        dump_function_call_stmt_ast_to_file_inner(f, ast->function_call_stmt, spaces_num);
+        break;
+    case STMT_TYPE_IF:
+        dump_if_stmt_ast_to_file_inner(f, ast->if_stmt, spaces_num);
+        break;
+    case STMT_TYPE_WHILE:
+        dump_while_stmt_ast_to_file_inner(f, ast->while_stmt, spaces_num);
+        break;
+    case STMT_TYPE_RETURN:
+        dump_return_stmt_ast_to_file_inner(f, ast->return_stmt, spaces_num);
+        break;
+    default:
+        fprintf(stderr, "Invalid STMT_AST type: %d\n", ast->type);
+        exit(EXIT_FAILURE);
+        break;        
+    }
+}
+
 void stmt_ast_free(struct STMT_AST*ast)
 {
     switch (ast->type) {
@@ -152,6 +269,18 @@ struct DECL_STMT_AST*create_decl_stmt_ast(struct IDENT_AST*new_var_name,
     return decl_stmt;
 }
 
+static void dump_assignment_expr_ast_to_file_inner(FILE*f, const struct ASSIGNMENT_EXPR_AST*ast, unsigned spaces_num);
+
+static void dump_decl_stmt_ast_to_file_inner(FILE*f, const struct DECL_STMT_AST*ast, unsigned spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<decl_stmt>\n");
+    INC_SPACES_NUM();
+    dump_ident_ast_to_file_inner(f, ast->new_var_name, spaces_num);
+    dump_assignment_expr_ast_to_file_inner(f, ast->assignment, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</decl_stmt>\n");
+}
+
 void decl_stmt_ast_free(struct DECL_STMT_AST*ast)
 {
     ident_ast_free(ast->new_var_name);
@@ -169,6 +298,18 @@ struct ASSIGN_STMT_AST*create_assign_stmt_ast(struct VARIABLE_AST*var_name,
     return assign_stmt;
 }
 
+static void dump_variable_ast_to_file_inner(FILE*f, const struct VARIABLE_AST*ast, unsigned spaces_num);
+
+static void dump_assign_stmt_ast_to_file_inner(FILE*f, const struct ASSIGN_STMT_AST*ast, unsigned spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<assign_stmt>\n");
+    INC_SPACES_NUM();
+    dump_variable_ast_to_file_inner(f, ast->var_name, spaces_num);
+    dump_assignment_expr_ast_to_file_inner(f, ast->assignment, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</assign_stmt>\n");
+}
+
 void assign_stmt_ast_free(struct ASSIGN_STMT_AST*ast)
 {
     variable_ast_free(ast->var_name);
@@ -182,6 +323,17 @@ struct FUNCTION_CALL_STMT_AST*create_function_call_stmt_ast(struct FUNCTION_CALL
     SAFE_MALLOC(function_call_stmt, 1);
     function_call_stmt->function_call = function_call;
     return function_call_stmt;
+}
+
+static void dump_function_call_ast_to_file_inner(FILE*f, const struct FUNCTION_CALL_AST*ast, unsigned spaces_num);
+
+static void dump_function_call_stmt_ast_to_file_inner(FILE*f, const struct FUNCTION_CALL_STMT_AST*ast, unsigned spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<function_call_stmt>\n");
+    INC_SPACES_NUM();
+    dump_function_call_ast_to_file_inner(f, ast->function_call, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</function_call_stmt>\n");
 }
 
 void function_call_stmt_ast_free(struct FUNCTION_CALL_STMT_AST*ast)
@@ -200,6 +352,13 @@ struct IF_STMT_AST*create_if_stmt_ast(struct LOGICAL_OR_EXPR_AST*condition,
     if_stmt->if_body = if_body;
     if_stmt->else_body = else_body;
     return if_stmt;
+}
+
+static void dump_if_stmt_ast_to_file_inner(FILE*f, const struct IF_STMT_AST*ast, unsigned spaces_num)
+{
+    (void)f;
+    (void)ast;
+    (void)spaces_num;
 }
 
 void if_stmt_ast_free(struct IF_STMT_AST*ast)
@@ -222,6 +381,23 @@ struct WHILE_STMT_AST*create_while_stmt_ast(struct LOGICAL_OR_EXPR_AST*condition
     return while_stmt;
 }
 
+static void dump_logical_or_expr_ast_to_file_inner(FILE*f, const struct LOGICAL_OR_EXPR_AST*ast, unsigned spaces_num);
+
+static void dump_while_stmt_ast_to_file_inner(FILE*f, const struct WHILE_STMT_AST*ast, unsigned spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<while_stmt>\n");
+    INC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "<condition>\n");
+    INC_SPACES_NUM();
+    dump_logical_or_expr_ast_to_file_inner(f, ast->condition, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</condition>\n");
+
+    dump_body_ast_to_file_inner(f, ast->body, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</while_stmt>\n");
+}
+
 void while_stmt_ast_free(struct WHILE_STMT_AST*ast)
 {
     logical_or_expr_ast_free(ast->condition);
@@ -235,6 +411,15 @@ struct RETURN_STMT_AST*create_return_stmt_ast(struct ASSIGNMENT_EXPR_AST*result)
     SAFE_MALLOC(return_stmt, 1);
     return_stmt->result = result;
     return return_stmt;
+}
+
+static void dump_return_stmt_ast_to_file_inner(FILE*f, const struct RETURN_STMT_AST*ast, unsigned spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<return_stmt>\n");
+    INC_SPACES_NUM();
+    dump_assignment_expr_ast_to_file_inner(f, ast->result, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</return_stmt>\n");
 }
 
 void return_stmt_ast_free(struct RETURN_STMT_AST*ast)
@@ -252,6 +437,19 @@ struct VARIABLE_AST*create_variable_ast(struct IDENT_AST**idents, unsigned ident
     variable->idents = idents;
     variable->idents_len = idents_len;
     return variable;
+}
+
+static void dump_variable_ast_to_file_inner(FILE*f, const struct VARIABLE_AST*ast, unsigned spaces_num)
+{
+    unsigned i;
+    
+    PUT_SPACES(); fprintf(f, "<variable>\n");
+    INC_SPACES_NUM();
+    for (i = 0; i < ast->idents_len; i++) {
+        dump_ident_ast_to_file_inner(f, ast->idents[i], spaces_num);
+    }
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</variable>\n");
 }
 
 void variable_ast_free(struct VARIABLE_AST*ast)
@@ -284,6 +482,24 @@ struct ASSIGNMENT_EXPR_AST*create_assignment_expr_ast(void*assignment_ptr, enum 
     return assignment_expr;
 }
 
+static void dump_object_literal_ast_to_file_inner(FILE*f, const struct OBJECT_LITERAL_AST*ast, unsigned spaces_num);
+
+static void dump_assignment_expr_ast_to_file_inner(FILE*f, const struct ASSIGNMENT_EXPR_AST*ast, unsigned spaces_num)
+{
+    switch (ast->type) {
+    case ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
+        dump_object_literal_ast_to_file_inner(f, ast->object_literal, spaces_num);
+        break;
+    case ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
+        dump_logical_or_expr_ast_to_file_inner(f, ast->logical_or_expr, spaces_num);
+        break;
+    default:
+        fprintf(stderr, "Invalid ASSIGNMENT_EXPR_AST type: %d\n", ast->type);
+        exit(EXIT_FAILURE);        
+        break;
+    }
+}
+
 void assignment_expr_ast_free(struct ASSIGNMENT_EXPR_AST*ast)
 {
     switch (ast->type) {
@@ -310,6 +526,21 @@ struct OBJECT_LITERAL_AST*create_object_literal_ast(struct PROPERTY_AST**propert
     return object_literal;
 }
 
+static void dump_property_ast_to_file_inner(FILE*f, const struct PROPERTY_AST*ast, unsigned spaces_num);
+
+static void dump_object_literal_ast_to_file_inner(FILE*f, const struct OBJECT_LITERAL_AST*ast, unsigned spaces_num)
+{
+    unsigned i;
+    
+    PUT_SPACES(); fprintf(f, "<object literal>\n");
+    INC_SPACES_NUM();
+    for (i = 0; i < ast->properties_len; i++) {
+        dump_property_ast_to_file_inner(f, ast->properties[i], spaces_num);
+    }
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</object literal>\n");
+}
+
 void object_literal_ast_free(struct OBJECT_LITERAL_AST*ast)
 {
     unsigned i;
@@ -329,6 +560,25 @@ struct PROPERTY_AST*create_property_ast(struct IDENT_AST*key, struct ASSIGNMENT_
     return property;
 }
 
+static void dump_property_ast_to_file_inner(FILE*f, const struct PROPERTY_AST*ast, unsigned spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<property>\n");
+    INC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "<key>\n");
+    INC_SPACES_NUM();
+    dump_ident_ast_to_file_inner(f, ast->key, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</key>\n");
+
+    PUT_SPACES(); fprintf(f, "<value>\n");
+    INC_SPACES_NUM();
+    dump_assignment_expr_ast_to_file_inner(f, ast->value, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</value>\n");
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</property>\n");
+}
+
 void property_ast_free(struct PROPERTY_AST*ast)
 {
     ident_ast_free(ast->key);
@@ -343,6 +593,11 @@ struct LOGICAL_OR_EXPR_AST*create_logical_or_expr_ast(struct LOGICAL_AND_EXPR_AS
     logical_or_expr->and_exprs = and_exprs;
     logical_or_expr->and_exprs_len = and_exprs_len;
     return logical_or_expr;
+}
+
+static void dump_logical_or_expr_ast_to_file_inner(FILE*f, const struct LOGICAL_OR_EXPR_AST*ast, unsigned spaces_num)
+{
+    
 }
 
 void logical_or_expr_ast_free(struct LOGICAL_OR_EXPR_AST*ast)
@@ -535,6 +790,24 @@ struct FUNCTION_CALL_AST*create_function_call_ast(struct IDENT_AST*function_name
     return function_call;
 }
 
+static void dump_args_list_ast_to_file_inner(FILE*f, const struct ARGS_LIST_AST*ast, unsigned spaces_num);
+
+static void dump_function_call_ast_to_file_inner(FILE*f, const struct FUNCTION_CALL_AST*ast, unsigned spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<function_call>\n");
+    INC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "<function_name>\n");
+    INC_SPACES_NUM();
+    dump_ident_ast_to_file_inner(f, ast->function_name, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</function_name>\n");
+    
+    dump_args_list_ast_to_file_inner(f, ast->args_list, spaces_num);
+    
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</function_call>\n");
+}
+
 void function_call_ast_free(struct FUNCTION_CALL_AST*ast)
 {
     ident_ast_free(ast->function_name);
@@ -549,6 +822,19 @@ struct ARGS_LIST_AST*create_args_list_ast(struct ASSIGNMENT_EXPR_AST**assignment
     args_list->assignment_exprs = assignment_exprs;
     args_list->assignment_exprs_len = assignment_exprs_len;
     return args_list;
+}
+
+static void dump_args_list_ast_to_file_inner(FILE*f, const struct ARGS_LIST_AST*ast, unsigned spaces_num)
+{
+    unsigned i;
+    
+    PUT_SPACES(); fprintf(f, "<args_list>\n");
+    INC_SPACES_NUM();
+    for (i = 0; i < ast->assignment_exprs_len; i++) {
+        dump_assignment_expr_ast_to_file_inner(f, ast->assignment_exprs[i], spaces_num);
+    }
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</args_list>\n");
 }
 
 void args_list_ast_free(struct ARGS_LIST_AST*ast)
@@ -567,6 +853,11 @@ struct IDENT_AST*create_ident_ast(const char*ident)
     SAFE_MALLOC(ident_ast, 1);
     strncpy(ident_ast->ident, ident, sizeof(ident_ast->ident));
     return ident_ast;
+}
+
+static void dump_ident_ast_to_file_inner(FILE*f, const struct IDENT_AST*ast, unsigned spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<ident>%s</ident>\n", ast->ident);
 }
 
 void ident_ast_free(struct IDENT_AST*ast)
