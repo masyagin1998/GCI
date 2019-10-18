@@ -37,7 +37,7 @@ static enum PARSER_CODES variable_ast_read(struct VARIABLE_AST**variable, lexer_
 
     /* reading variable. */
     PUSH_BACK(idents, ident);
-    while ((*tok)->token_type != TOKEN_TYPE_EQ) {
+    while (1) {
         if (is_dot && ((*tok)->token_type == TOKEN_TYPE_DOT)) {
             token_free((*tok));
             lexer_next_token(lexer, tok);
@@ -48,12 +48,7 @@ static enum PARSER_CODES variable_ast_read(struct VARIABLE_AST**variable, lexer_
             lexer_next_token(lexer, tok);
             is_dot = 1;
         } else {
-            unsigned i;
-            for (i = 0; i < idents_len; i++) {
-                ident_ast_free(idents[i]);
-            }
-            SAFE_FREE(idents);
-            
+            break;
         }
     }
     (*variable) = create_variable_ast(idents, idents_len);
@@ -183,18 +178,6 @@ static enum PARSER_CODES primary_expr_ast_read(struct PRIMARY_EXPR_AST**primary_
 
         /* check, if name is part of variable or name is function name. */
         switch ((*tok)->token_type) {
-        case TOKEN_TYPE_DOT: {
-            struct VARIABLE_AST*var_name;
-
-            r = variable_ast_read(&var_name, lexer, tok, ident);
-            if (r != PARSER_OK) {
-                
-            }
-
-            (*primary_expr) = create_primary_expr_ast(var_name, PRIMARY_EXPR_TYPE_VARIABLE);
-            
-            break;
-        }
         case TOKEN_TYPE_LPAREN: {
             struct FUNCTION_CALL_AST*function_call;
 
@@ -208,7 +191,14 @@ static enum PARSER_CODES primary_expr_ast_read(struct PRIMARY_EXPR_AST**primary_
             break;
         }
         default: {
-            r = PARSER_INVALID_TOKEN;
+            struct VARIABLE_AST*var_name;
+
+            r = variable_ast_read(&var_name, lexer, tok, ident);
+            if (r != PARSER_OK) {
+                
+            }
+
+            (*primary_expr) = create_primary_expr_ast(var_name, PRIMARY_EXPR_TYPE_VARIABLE);
             
             break;
         }
@@ -717,6 +707,8 @@ static enum PARSER_CODES while_stmt_ast_read(struct WHILE_STMT_AST**while_stmt, 
         goto err1;
     }
 
+    (*while_stmt) = create_while_stmt_ast(condition, body);
+
     return PARSER_OK;
 
  err1:
@@ -731,7 +723,7 @@ static enum PARSER_CODES return_stmt_ast_read(struct RETURN_STMT_AST**return_stm
     enum PARSER_CODES r;    
     struct ASSIGNMENT_EXPR_AST*assignment_expr;
     
-    /* no check, because it could be only TOKEN_TYPE_WHILE. */
+    /* no check, because it could be only TOKEN_TYPE_RETURN. */
     token_free((*tok));
     lexer_next_token(lexer, tok);
 
@@ -748,6 +740,9 @@ static enum PARSER_CODES return_stmt_ast_read(struct RETURN_STMT_AST**return_stm
         r = PARSER_INVALID_TOKEN;
         goto err1;
     }
+
+    token_free((*tok));
+    lexer_next_token(lexer, tok);
 
     (*return_stmt) = create_return_stmt_ast(assignment_expr);
 

@@ -1,7 +1,3 @@
-function fizz(a, b, c) {
-
-}
-
-function buzz() {
-    fizz({a : 1, b : 2});
+function fizz() {
+    a = 1 + 2 + f(5, 6);
 }
