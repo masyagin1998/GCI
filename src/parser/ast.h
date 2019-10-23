@@ -72,14 +72,14 @@ statement = decl_statement |
             return_statement
 */
 
-enum STMT_TYPE
+enum AST_STMT_TYPE
 {
-    STMT_TYPE_DECL,
-    STMT_TYPE_ASSIGN,
-    STMT_TYPE_FUNCTION_CALL,
-    STMT_TYPE_IF,
-    STMT_TYPE_WHILE,
-    STMT_TYPE_RETURN,
+    AST_STMT_TYPE_DECL,
+    AST_STMT_TYPE_ASSIGN,
+    AST_STMT_TYPE_FUNCTION_CALL,
+    AST_STMT_TYPE_IF,
+    AST_STMT_TYPE_WHILE,
+    AST_STMT_TYPE_RETURN,
 };
 
 struct STMT_AST
@@ -94,10 +94,10 @@ struct STMT_AST
         struct RETURN_STMT_AST*return_stmt;
     };
 
-    enum STMT_TYPE type;
+    enum AST_STMT_TYPE type;
 };
 
-struct STMT_AST*create_stmt_ast(void*stmt_ptr, enum STMT_TYPE stmt_type);
+struct STMT_AST*create_stmt_ast(void*stmt_ptr, enum AST_STMT_TYPE stmt_type);
 void dump_stmt_ast_to_file(FILE*f, const struct STMT_AST*ast);
 void stmt_ast_free(struct STMT_AST*ast);
 
@@ -209,10 +209,10 @@ void variable_ast_free(struct VARIABLE_AST*ast);
   assignment_expr = object_literal | logical_or_expr
 */
 
-enum ASSIGNMENT_EXPR_TYPE
+enum AST_ASSIGNMENT_EXPR_TYPE
 {
-    ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL,
-    ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR,
+    AST_ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL,
+    AST_ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR,
 };
 
 struct ASSIGNMENT_EXPR_AST
@@ -223,10 +223,10 @@ struct ASSIGNMENT_EXPR_AST
         struct LOGICAL_OR_EXPR_AST*logical_or_expr;
     };
 
-    enum ASSIGNMENT_EXPR_TYPE type;
+    enum AST_ASSIGNMENT_EXPR_TYPE type;
 };
 
-struct ASSIGNMENT_EXPR_AST*create_assignment_expr_ast(void*assignment_ptr, enum ASSIGNMENT_EXPR_TYPE type);
+struct ASSIGNMENT_EXPR_AST*create_assignment_expr_ast(void*assignment_ptr, enum AST_ASSIGNMENT_EXPR_TYPE type);
 void dump_assignment_expr_ast_to_file(FILE*f, const struct ASSIGNMENT_EXPR_AST*ast);
 void assignment_expr_ast_free(struct ASSIGNMENT_EXPR_AST*ast);
 
@@ -293,21 +293,21 @@ void logical_and_expr_ast_free(struct LOGICAL_AND_EXPR_AST*ast);
   eq_op   = EQEQ | NEQ
 */
 
-enum EQ_OP
+enum AST_EQ_OP
 {
-    EQEQ,
-    NEQ,
+    AST_EQ_OP_EQEQ,
+    AST_EQ_OP_NEQ,
 };
 
 struct EQ_EXPR_AST
 {
     struct RELATIONAL_EXPR_AST*left;
-    enum EQ_OP eq_op;
+    enum AST_EQ_OP eq_op;
     struct RELATIONAL_EXPR_AST*right;
 };
 
 struct EQ_EXPR_AST*create_eq_expr_ast(struct RELATIONAL_EXPR_AST*left,
-                                      enum EQ_OP eq_op,
+                                      enum AST_EQ_OP eq_op,
                                       struct RELATIONAL_EXPR_AST*right);
 void dump_eq_expr_ast_to_file(FILE*f, const struct EQ_EXPR_AST*ast);
 void eq_expr_ast_free(struct EQ_EXPR_AST*ast);
@@ -317,23 +317,23 @@ void eq_expr_ast_free(struct EQ_EXPR_AST*ast);
   relational_op   = LT | GT | LE | GE
 */
 
-enum REL_OP
+enum AST_REL_OP
 {
-    LT,
-    GT,
-    LE,
-    GE, 
+    AST_REL_OP_LT,
+    AST_REL_OP_GT,
+    AST_REL_OP_LE,
+    AST_REL_OP_GE, 
 };
 
 struct RELATIONAL_EXPR_AST
 {
     struct ADDITIVE_EXPR_AST*left;
-    enum REL_OP rel_op;
+    enum AST_REL_OP rel_op;
     struct ADDITIVE_EXPR_AST*right;
 };
 
 struct RELATIONAL_EXPR_AST*create_relational_expr_ast(struct ADDITIVE_EXPR_AST*left,
-                                                      enum REL_OP rel_op,
+                                                      enum AST_REL_OP rel_op,
                                                       struct ADDITIVE_EXPR_AST*right);
 void dump_relational_expr_ast_to_file(FILE*f, const struct RELATIONAL_EXPR_AST*ast);
 void relational_expr_ast_free(struct RELATIONAL_EXPR_AST*ast);
@@ -343,21 +343,21 @@ void relational_expr_ast_free(struct RELATIONAL_EXPR_AST*ast);
   additive_op   = PLUS | MINUS
 */
 
-enum ADDITIVE_OP
+enum AST_ADDITIVE_OP
 {
-    PLUS,
-    MINUS,
+    AST_ADDITIVE_OP_PLUS,
+    AST_ADDITIVE_OP_MINUS,
 };
 
 struct ADDITIVE_EXPR_AST
 {
     struct MULTIPLICATIVE_EXPR_AST**muls;
-    enum ADDITIVE_OP*ops;
+    enum AST_ADDITIVE_OP*ops;
     unsigned muls_len;
 };
 
 struct ADDITIVE_EXPR_AST*create_additive_expr_ast(struct MULTIPLICATIVE_EXPR_AST**muls,
-                                                  enum ADDITIVE_OP*ops,
+                                                  enum AST_ADDITIVE_OP*ops,
                                                   unsigned muls_len);
 void dump_additive_expr_ast_to_file(FILE*f, const struct ADDITIVE_EXPR_AST*ast);
 void additive_expr_ast_free(struct ADDITIVE_EXPR_AST*ast);
@@ -367,22 +367,22 @@ void additive_expr_ast_free(struct ADDITIVE_EXPR_AST*ast);
   multiplicative_op   = MUL | DIV | MOD
 */
 
-enum MULTIPLICATIVE_OP
+enum AST_MULTIPLICATIVE_OP
 {
-    MUL,
-    DIV,
-    MOD,
+    AST_MULTIPLICATIVE_OP_MUL,
+    AST_MULTIPLICATIVE_OP_DIV,
+    AST_MULTIPLICATIVE_OP_MOD,
 };
 
 struct MULTIPLICATIVE_EXPR_AST
 {
     struct LEFT_UNARY_EXPR_AST**lues;
-    enum MULTIPLICATIVE_OP*ops;
+    enum AST_MULTIPLICATIVE_OP*ops;
     unsigned lues_len;
 };
 
 struct MULTIPLICATIVE_EXPR_AST*create_multiplicative_expr_ast(struct LEFT_UNARY_EXPR_AST**lues,
-                                                              enum MULTIPLICATIVE_OP*ops,
+                                                              enum AST_MULTIPLICATIVE_OP*ops,
                                                               unsigned lues_len);
 void dump_multiplicative_expr_ast_to_file(FILE*f, const struct MULTIPLICATIVE_EXPR_AST*ast);
 void multiplicative_expr_ast_free(struct MULTIPLICATIVE_EXPR_AST*ast);
@@ -392,19 +392,19 @@ void multiplicative_expr_ast_free(struct MULTIPLICATIVE_EXPR_AST*ast);
   left_unary_op   = PLUS | MINUS
 */
 
-enum LEFT_UNARY_EXPR_OP
+enum AST_LEFT_UNARY_OP
 {
-    UNARY_PLUS,
-    UNARY_MINUS,
+    AST_LEFT_UNARY_OP_PLUS,
+    AST_LEFT_UNARY_OP_MINUS,
 };
 
 struct LEFT_UNARY_EXPR_AST
 {
-    enum LEFT_UNARY_EXPR_OP op;
+    enum AST_LEFT_UNARY_OP op;
     struct PRIMARY_EXPR_AST*expr;
 };
 
-struct LEFT_UNARY_EXPR_AST*create_left_unary_expr_ast(enum LEFT_UNARY_EXPR_OP op, struct PRIMARY_EXPR_AST*expr);
+struct LEFT_UNARY_EXPR_AST*create_left_unary_expr_ast(enum AST_LEFT_UNARY_OP op, struct PRIMARY_EXPR_AST*expr);
 void dump_left_unary_expr_ast_to_file(FILE*f, const struct LEFT_UNARY_EXPR_AST*ast);
 void left_unary_expr_ast_free(struct LEFT_UNARY_EXPR_AST*ast);
 
@@ -412,12 +412,12 @@ void left_unary_expr_ast_free(struct LEFT_UNARY_EXPR_AST*ast);
   primary_expr = function_call | variable | NUMBER | LPAREN logical_or_expr RPAREN
 */
 
-enum PRIMARY_EXPR_TYPE
+enum AST_PRIMARY_EXPR_TYPE
 {
-    PRIMARY_EXPR_TYPE_FUNCTION_CALL,
-    PRIMARY_EXPR_TYPE_VARIABLE,
-    PRIMARY_EXPR_TYPE_NUMBER,
-    PRIMARY_EXPR_TYPE_LOGICAL_EXPR,
+    AST_PRIMARY_EXPR_TYPE_FUNCTION_CALL,
+    AST_PRIMARY_EXPR_TYPE_VARIABLE,
+    AST_PRIMARY_EXPR_TYPE_NUMBER,
+    AST_PRIMARY_EXPR_TYPE_LOGICAL_EXPR,
 };
 
 struct PRIMARY_EXPR_AST
@@ -429,10 +429,10 @@ struct PRIMARY_EXPR_AST
         struct LOGICAL_OR_EXPR_AST*logical_or_expr;
     };
 
-    enum PRIMARY_EXPR_TYPE type;
+    enum AST_PRIMARY_EXPR_TYPE type;
 };
 
-struct PRIMARY_EXPR_AST*create_primary_expr_ast(void*primary_expr_ptr, enum PRIMARY_EXPR_TYPE type);
+struct PRIMARY_EXPR_AST*create_primary_expr_ast(void*primary_expr_ptr, enum AST_PRIMARY_EXPR_TYPE type);
 void dump_primary_expr_ast_to_file(FILE*f, const struct PRIMARY_EXPR_AST*ast);
 void primary_expr_ast_free(struct PRIMARY_EXPR_AST*ast);
 

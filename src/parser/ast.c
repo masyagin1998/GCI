@@ -163,27 +163,27 @@ void body_ast_free(struct BODY_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct STMT_AST*create_stmt_ast(void*stmt_ptr, enum STMT_TYPE stmt_type)
+struct STMT_AST*create_stmt_ast(void*stmt_ptr, enum AST_STMT_TYPE stmt_type)
 {
     struct STMT_AST*stmt;
     SAFE_MALLOC(stmt, 1);
     switch (stmt_type) {
-    case STMT_TYPE_DECL:
+    case AST_STMT_TYPE_DECL:
         stmt->decl_stmt = stmt_ptr;
         break;
-    case STMT_TYPE_ASSIGN:
+    case AST_STMT_TYPE_ASSIGN:
         stmt->assign_stmt = stmt_ptr;
         break;
-    case STMT_TYPE_FUNCTION_CALL:
+    case AST_STMT_TYPE_FUNCTION_CALL:
         stmt->function_call_stmt = stmt_ptr;
         break;
-    case STMT_TYPE_IF:
+    case AST_STMT_TYPE_IF:
         stmt->if_stmt = stmt_ptr;
         break;
-    case STMT_TYPE_WHILE:
+    case AST_STMT_TYPE_WHILE:
         stmt->while_stmt = stmt_ptr;
         break;
-    case STMT_TYPE_RETURN:
+    case AST_STMT_TYPE_RETURN:
         stmt->return_stmt = stmt_ptr;
         break;
     default:
@@ -205,22 +205,22 @@ static void dump_return_stmt_ast_to_file_inner(FILE*f, const struct RETURN_STMT_
 static void dump_stmt_ast_to_file_inner(FILE*f, const struct STMT_AST*ast, unsigned spaces_num)
 {
     switch (ast->type) {
-    case STMT_TYPE_DECL:
+    case AST_STMT_TYPE_DECL:
         dump_decl_stmt_ast_to_file_inner(f, ast->decl_stmt, spaces_num);
         break;
-    case STMT_TYPE_ASSIGN:
+    case AST_STMT_TYPE_ASSIGN:
         dump_assign_stmt_ast_to_file_inner(f, ast->assign_stmt, spaces_num);
         break;
-    case STMT_TYPE_FUNCTION_CALL:
+    case AST_STMT_TYPE_FUNCTION_CALL:
         dump_function_call_stmt_ast_to_file_inner(f, ast->function_call_stmt, spaces_num);
         break;
-    case STMT_TYPE_IF:
+    case AST_STMT_TYPE_IF:
         dump_if_stmt_ast_to_file_inner(f, ast->if_stmt, spaces_num);
         break;
-    case STMT_TYPE_WHILE:
+    case AST_STMT_TYPE_WHILE:
         dump_while_stmt_ast_to_file_inner(f, ast->while_stmt, spaces_num);
         break;
-    case STMT_TYPE_RETURN:
+    case AST_STMT_TYPE_RETURN:
         dump_return_stmt_ast_to_file_inner(f, ast->return_stmt, spaces_num);
         break;
     default:
@@ -233,22 +233,22 @@ static void dump_stmt_ast_to_file_inner(FILE*f, const struct STMT_AST*ast, unsig
 void stmt_ast_free(struct STMT_AST*ast)
 {
     switch (ast->type) {
-    case STMT_TYPE_DECL:
+    case AST_STMT_TYPE_DECL:
         decl_stmt_ast_free(ast->decl_stmt);
         break;
-    case STMT_TYPE_ASSIGN:
+    case AST_STMT_TYPE_ASSIGN:
         assign_stmt_ast_free(ast->assign_stmt);
         break;
-    case STMT_TYPE_FUNCTION_CALL:
+    case AST_STMT_TYPE_FUNCTION_CALL:
         function_call_stmt_ast_free(ast->function_call_stmt);
         break;
-    case STMT_TYPE_IF:
+    case AST_STMT_TYPE_IF:
         if_stmt_ast_free(ast->if_stmt);
         break;
-    case STMT_TYPE_WHILE:
+    case AST_STMT_TYPE_WHILE:
         while_stmt_ast_free(ast->while_stmt);
         break;
-    case STMT_TYPE_RETURN:
+    case AST_STMT_TYPE_RETURN:
         return_stmt_ast_free(ast->return_stmt);
         break;
     default:
@@ -464,15 +464,15 @@ void variable_ast_free(struct VARIABLE_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct ASSIGNMENT_EXPR_AST*create_assignment_expr_ast(void*assignment_ptr, enum ASSIGNMENT_EXPR_TYPE type)
+struct ASSIGNMENT_EXPR_AST*create_assignment_expr_ast(void*assignment_ptr, enum AST_ASSIGNMENT_EXPR_TYPE type)
 {
     struct ASSIGNMENT_EXPR_AST*assignment_expr;
     SAFE_MALLOC(assignment_expr, 1);
     switch (type) {
-    case ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
+    case AST_ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
         assignment_expr->object_literal = assignment_ptr;
         break;
-    case ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
+    case AST_ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
         assignment_expr->logical_or_expr = assignment_ptr;
         break;
     default:
@@ -489,10 +489,10 @@ static void dump_object_literal_ast_to_file_inner(FILE*f, const struct OBJECT_LI
 static void dump_assignment_expr_ast_to_file_inner(FILE*f, const struct ASSIGNMENT_EXPR_AST*ast, unsigned spaces_num)
 {
     switch (ast->type) {
-    case ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
+    case AST_ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
         dump_object_literal_ast_to_file_inner(f, ast->object_literal, spaces_num);
         break;
-    case ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
+    case AST_ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
         dump_logical_or_expr_ast_to_file_inner(f, ast->logical_or_expr, spaces_num);
         break;
     default:
@@ -505,10 +505,10 @@ static void dump_assignment_expr_ast_to_file_inner(FILE*f, const struct ASSIGNME
 void assignment_expr_ast_free(struct ASSIGNMENT_EXPR_AST*ast)
 {
     switch (ast->type) {
-    case ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
+    case AST_ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
         object_literal_ast_free(ast->object_literal);
         break;
-    case ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
+    case AST_ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
         logical_or_expr_ast_free(ast->logical_or_expr);
         break;
     default:
@@ -669,7 +669,7 @@ void logical_and_expr_ast_free(struct LOGICAL_AND_EXPR_AST*ast)
 }
 
 struct EQ_EXPR_AST*create_eq_expr_ast(struct RELATIONAL_EXPR_AST*left,
-                                      enum EQ_OP eq_op,
+                                      enum AST_EQ_OP eq_op,
                                       struct RELATIONAL_EXPR_AST*right)
 {
     struct EQ_EXPR_AST*eq_expr;
@@ -690,9 +690,9 @@ static void dump_eq_expr_ast_to_file_inner(FILE*f, const struct EQ_EXPR_AST*ast,
         PUT_SPACES(); fprintf(f, "<eq_expr>\n");
         INC_SPACES_NUM();
         dump_relational_expr_ast_to_file_inner(f, ast->left, spaces_num);
-        if (ast->eq_op == EQEQ) {
+        if (ast->eq_op == AST_EQ_OP_EQEQ) {
             PUT_SPACES(); fprintf(f, "<op>EQEQ</op>\n");
-        } else if (ast->eq_op == NEQ) {
+        } else if (ast->eq_op == AST_EQ_OP_NEQ) {
             PUT_SPACES(); fprintf(f, "<op>NEQ</op>\n");
         }
         dump_relational_expr_ast_to_file_inner(f, ast->right, spaces_num);
@@ -711,7 +711,7 @@ void eq_expr_ast_free(struct EQ_EXPR_AST*ast)
 }
 
 struct RELATIONAL_EXPR_AST*create_relational_expr_ast(struct ADDITIVE_EXPR_AST*left,
-                                                      enum REL_OP rel_op,
+                                                      enum AST_REL_OP rel_op,
                                                       struct ADDITIVE_EXPR_AST*right)
 {
     struct RELATIONAL_EXPR_AST*relational_expr;
@@ -732,13 +732,13 @@ static void dump_relational_expr_ast_to_file_inner(FILE*f, const struct RELATION
         PUT_SPACES(); fprintf(f, "<relational_expr>\n");
         INC_SPACES_NUM();
         dump_additive_expr_ast_to_file_inner(f, ast->left, spaces_num);
-        if (ast->rel_op == LT) {
+        if (ast->rel_op == AST_REL_OP_LT) {
             PUT_SPACES(); fprintf(f, "<op>LT</op>\n");
-        } else if (ast->rel_op == GT) {
+        } else if (ast->rel_op == AST_REL_OP_GT) {
             PUT_SPACES(); fprintf(f, "<op>GT</op>\n");
-        } else if (ast->rel_op == LE) {
+        } else if (ast->rel_op == AST_REL_OP_LE) {
             PUT_SPACES(); fprintf(f, "<op>LE</op>\n");
-        } else if (ast->rel_op == GE) {
+        } else if (ast->rel_op == AST_REL_OP_GE) {
             PUT_SPACES(); fprintf(f, "<op>GE</op>\n");
         }
         dump_additive_expr_ast_to_file_inner(f, ast->right, spaces_num);
@@ -757,7 +757,7 @@ void relational_expr_ast_free(struct RELATIONAL_EXPR_AST*ast)
 }
 
 struct ADDITIVE_EXPR_AST*create_additive_expr_ast(struct MULTIPLICATIVE_EXPR_AST**muls,
-                                                  enum ADDITIVE_OP*ops,
+                                                  enum AST_ADDITIVE_OP*ops,
                                                   unsigned muls_len)
 {
     struct ADDITIVE_EXPR_AST*additive_expr;
@@ -792,9 +792,9 @@ static void dump_additive_expr_ast_to_file_inner(FILE*f, const struct ADDITIVE_E
         INC_SPACES_NUM();
         dump_multiplicative_expr_ast_to_file_inner(f, ast->muls[0], spaces_num);
         for (i = 1; i < ast->muls_len; i++) {
-            if (ast->ops[i - 1] == PLUS) {
+            if (ast->ops[i - 1] == AST_ADDITIVE_OP_PLUS) {
                 PUT_SPACES(); fprintf(f, "<op>PLUS</op>\n");
-            } else if (ast->ops[i - 1] == MINUS) {
+            } else if (ast->ops[i - 1] == AST_ADDITIVE_OP_MINUS) {
                 PUT_SPACES(); fprintf(f, "<op>MINUS</op>\n");
             }
             dump_multiplicative_expr_ast_to_file_inner(f, ast->muls[i], spaces_num);
@@ -805,7 +805,7 @@ static void dump_additive_expr_ast_to_file_inner(FILE*f, const struct ADDITIVE_E
 }
 
 struct MULTIPLICATIVE_EXPR_AST*create_multiplicative_expr_ast(struct LEFT_UNARY_EXPR_AST**lues,
-                                                              enum MULTIPLICATIVE_OP*ops,
+                                                              enum AST_MULTIPLICATIVE_OP*ops,
                                                               unsigned lues_len)
 {
     struct MULTIPLICATIVE_EXPR_AST*mul_expr;
@@ -829,11 +829,11 @@ static void dump_multiplicative_expr_ast_to_file_inner(FILE*f, const struct MULT
         INC_SPACES_NUM();
         dump_left_unary_expr_ast_to_file_inner(f, ast->lues[0], spaces_num);
         for (i = 1; i < ast->lues_len; i++) {
-            if (ast->ops[i - 1] == MUL) {
+            if (ast->ops[i - 1] == AST_MULTIPLICATIVE_OP_MUL) {
                 PUT_SPACES(); fprintf(f, "<op>MUL</op>\n");
-            } else if (ast->ops[i - 1] == DIV) {
+            } else if (ast->ops[i - 1] == AST_MULTIPLICATIVE_OP_DIV) {
                 PUT_SPACES(); fprintf(f, "<op>DIV</op>\n");
-            } else if (ast->ops[i - 1] == MOD) {
+            } else if (ast->ops[i - 1] == AST_MULTIPLICATIVE_OP_MOD) {
                 PUT_SPACES(); fprintf(f, "<op>MOD</op>\n");
             }
             dump_left_unary_expr_ast_to_file_inner(f, ast->lues[i], spaces_num);
@@ -854,7 +854,7 @@ void multiplicative_expr_ast_free(struct MULTIPLICATIVE_EXPR_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct LEFT_UNARY_EXPR_AST*create_left_unary_expr_ast(enum LEFT_UNARY_EXPR_OP op, struct PRIMARY_EXPR_AST*expr)
+struct LEFT_UNARY_EXPR_AST*create_left_unary_expr_ast(enum AST_LEFT_UNARY_OP op, struct PRIMARY_EXPR_AST*expr)
 {
     struct LEFT_UNARY_EXPR_AST*lue;
     SAFE_MALLOC(lue, 1);
@@ -867,7 +867,7 @@ static void dump_primary_expr_ast_to_file_inner(FILE*f, const struct PRIMARY_EXP
 
 static void dump_left_unary_expr_ast_to_file_inner(FILE*f, const struct LEFT_UNARY_EXPR_AST*ast, unsigned spaces_num)
 {
-    if (ast->op != UNARY_PLUS) {
+    if (ast->op != AST_LEFT_UNARY_OP_PLUS) {
         PUT_SPACES(); fprintf(f, "<left_unary_expr>\n");
         INC_SPACES_NUM();
         PUT_SPACES(); fprintf(f, "<op>UNARY_MINUS</op>\n");
@@ -885,21 +885,21 @@ void left_unary_expr_ast_free(struct LEFT_UNARY_EXPR_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct PRIMARY_EXPR_AST*create_primary_expr_ast(void*primary_expr_ptr, enum PRIMARY_EXPR_TYPE type)
+struct PRIMARY_EXPR_AST*create_primary_expr_ast(void*primary_expr_ptr, enum AST_PRIMARY_EXPR_TYPE type)
 {
     struct PRIMARY_EXPR_AST*primary_expr;
     SAFE_MALLOC(primary_expr, 1);
     switch (type) {
-    case PRIMARY_EXPR_TYPE_FUNCTION_CALL:
+    case AST_PRIMARY_EXPR_TYPE_FUNCTION_CALL:
         primary_expr->function_call = primary_expr_ptr;
         break;
-    case PRIMARY_EXPR_TYPE_VARIABLE:
+    case AST_PRIMARY_EXPR_TYPE_VARIABLE:
         primary_expr->var_name = primary_expr_ptr;
         break;
-    case PRIMARY_EXPR_TYPE_NUMBER:
+    case AST_PRIMARY_EXPR_TYPE_NUMBER:
         primary_expr->number = primary_expr_ptr;
         break;
-    case PRIMARY_EXPR_TYPE_LOGICAL_EXPR:
+    case AST_PRIMARY_EXPR_TYPE_LOGICAL_EXPR:
         primary_expr->logical_or_expr = primary_expr_ptr;
         break;
     default:
@@ -916,16 +916,16 @@ static void dump_number_ast_to_file_inner(FILE*f, const struct NUMBER_AST*ast, u
 static void dump_primary_expr_ast_to_file_inner(FILE*f, const struct PRIMARY_EXPR_AST*ast, unsigned spaces_num)
 {
     switch (ast->type) {
-    case PRIMARY_EXPR_TYPE_FUNCTION_CALL:
+    case AST_PRIMARY_EXPR_TYPE_FUNCTION_CALL:
         dump_function_call_ast_to_file_inner(f, ast->function_call, spaces_num);
         break;
-    case PRIMARY_EXPR_TYPE_VARIABLE:
+    case AST_PRIMARY_EXPR_TYPE_VARIABLE:
         dump_variable_ast_to_file_inner(f, ast->var_name, spaces_num);
         break;
-    case PRIMARY_EXPR_TYPE_NUMBER:
+    case AST_PRIMARY_EXPR_TYPE_NUMBER:
         dump_number_ast_to_file_inner(f, ast->number, spaces_num);
         break;
-    case PRIMARY_EXPR_TYPE_LOGICAL_EXPR:
+    case AST_PRIMARY_EXPR_TYPE_LOGICAL_EXPR:
         dump_logical_or_expr_ast_to_file_inner(f, ast->logical_or_expr, spaces_num);
         break;
     default:
@@ -938,16 +938,16 @@ static void dump_primary_expr_ast_to_file_inner(FILE*f, const struct PRIMARY_EXP
 void primary_expr_ast_free(struct PRIMARY_EXPR_AST*ast)
 {
     switch (ast->type) {
-    case PRIMARY_EXPR_TYPE_FUNCTION_CALL:
+    case AST_PRIMARY_EXPR_TYPE_FUNCTION_CALL:
         function_call_ast_free(ast->function_call);
         break;
-    case PRIMARY_EXPR_TYPE_VARIABLE:
+    case AST_PRIMARY_EXPR_TYPE_VARIABLE:
         variable_ast_free(ast->var_name);
         break;
-    case PRIMARY_EXPR_TYPE_NUMBER:
+    case AST_PRIMARY_EXPR_TYPE_NUMBER:
         number_ast_free(ast->number);
         break;
-    case PRIMARY_EXPR_TYPE_LOGICAL_EXPR:
+    case AST_PRIMARY_EXPR_TYPE_LOGICAL_EXPR:
         logical_or_expr_ast_free(ast->logical_or_expr);
         break;
     default:
