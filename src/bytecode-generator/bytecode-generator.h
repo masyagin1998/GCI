@@ -3,6 +3,11 @@
 
 #include "parser.h"
 
+enum BYTECODE_GENERATOR_CODES
+{
+    BYTECODE_GENERATOR_OK = 0,
+};
+
 struct BYTECODE_GENERATOR;
 
 typedef struct BYTECODE_GENERATOR* bytecode_generator_type_t;
@@ -13,17 +18,21 @@ void bytecode_generator_conf(bytecode_generator_type_t bc_gen, struct UNIT_AST*a
 
 struct BYTECODE;
 
-void bytecode_generator_generate(bytecode_generator_type_t bc_gen, struct BYTECODE**bc);
+enum BYTECODE_GENERATOR_CODES bytecode_generator_generate(bytecode_generator_type_t bc_gen, struct BYTECODE**bc);
 
 void bytecode_generator_free(bytecode_generator_type_t bc);
 
 enum BC_OP_CODES
 {
-    BC_OP_CONSTANT, /* push constant to stack. */
+    BC_OP_POP, /* remove value from stack */
+ 
+    BC_OP_CONSTANT, /* push constant to stack */
 
-    BC_OP_DECL_LOCAL, /* declare local variable   */
-    BC_OP_GET_LOCAL,  /* get local variable value */
-    BC_OP_SET_LOCAL,  /* set local variable value */
+    BC_OP_GET_LOCAL, /* get local variable value */
+    BC_OP_SET_LOCAL, /* set local variable value */
+
+    BC_OP_GET_HEAP, /* get heap variable value */ 
+    BC_OP_SET_HEAP, /* set heap variable value */
 
     BC_OP_LOGICAL_OR,
     BC_OP_LOGICAL_AND,
