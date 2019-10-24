@@ -899,12 +899,12 @@ struct PRIMARY_EXPR_AST*create_primary_expr_ast(void*primary_expr_ptr, enum AST_
     case AST_PRIMARY_EXPR_TYPE_NUMBER:
         primary_expr->number = primary_expr_ptr;
         break;
-    case AST_PRIMARY_EXPR_TYPE_LOGICAL_EXPR:
+    case AST_PRIMARY_EXPR_TYPE_LOGICAL_OR_EXPR:
         primary_expr->logical_or_expr = primary_expr_ptr;
         break;
     default:
         fprintf(stderr, "Invalid PRIMARY_EXPR_AST type: %d\n", type);
-        exit(EXIT_FAILURE);                
+        exit(EXIT_FAILURE);
         break;
     }
     primary_expr->type = type;
@@ -925,7 +925,7 @@ static void dump_primary_expr_ast_to_file_inner(FILE*f, const struct PRIMARY_EXP
     case AST_PRIMARY_EXPR_TYPE_NUMBER:
         dump_number_ast_to_file_inner(f, ast->number, spaces_num);
         break;
-    case AST_PRIMARY_EXPR_TYPE_LOGICAL_EXPR:
+    case AST_PRIMARY_EXPR_TYPE_LOGICAL_OR_EXPR:
         dump_logical_or_expr_ast_to_file_inner(f, ast->logical_or_expr, spaces_num);
         break;
     default:
@@ -947,7 +947,7 @@ void primary_expr_ast_free(struct PRIMARY_EXPR_AST*ast)
     case AST_PRIMARY_EXPR_TYPE_NUMBER:
         number_ast_free(ast->number);
         break;
-    case AST_PRIMARY_EXPR_TYPE_LOGICAL_EXPR:
+    case AST_PRIMARY_EXPR_TYPE_LOGICAL_OR_EXPR:
         logical_or_expr_ast_free(ast->logical_or_expr);
         break;
     default:

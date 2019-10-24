@@ -106,7 +106,7 @@ struct TOKEN
     {
         long long int_val;
         double double_val;
-        char   str_val[32];
+        char str_val[32];
     };
 };
 

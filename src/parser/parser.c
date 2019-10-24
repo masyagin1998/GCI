@@ -1,5 +1,7 @@
 #include "parser.h"
 
+#include "utils.h"
+
 struct PARSER
 {
     lexer_type_t lexer;
