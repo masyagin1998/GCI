@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "bytecode-generator.h"
+#include "virtual-machine.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -133,6 +134,9 @@ void print_bytecode_result(const char*fname, const bytecode_type_t bc)
     fclose(f);
 }
 
+#define STACK_SIZE 1024
+#define HEAP_SIZE  16 * 1024 * 1024
+
 int main(int argc, char**argv)
 {
     int code;
@@ -141,6 +145,7 @@ int main(int argc, char**argv)
     lexer_type_t  lexer;
     parser_type_t parser;
     bytecode_generator_type_t bc_gen;
+    virtual_machine_type_t vm;
 
     struct UNIT_AST*unit;
     bytecode_type_t bc;
@@ -172,6 +177,10 @@ int main(int argc, char**argv)
         print_bytecode_result(params.out, bc);
         exit(0);
     }
+
+    vm = create_virtual_machine();
+    virtual_machine_conf(vm, bc, STACK_SIZE, HEAP_SIZE);
+    virtual_machine_run(vm);
 
     return 0;
 }

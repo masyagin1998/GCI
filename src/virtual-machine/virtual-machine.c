@@ -2,9 +2,9 @@
 
 enum VALUE_TYPE
 {
-    STACK_VALUE_TYPE_INTEGER,
-    STACK_VALUE_TYPE_DOUBLE,
-    STACK_VALUE_TYPE_OBJ,
+    VALUE_TYPE_INTEGER,
+    VALUE_TYPE_DOUBLE,
+    VALUE_TYPE_OBJ,
 };
 
 struct VALUE
@@ -12,11 +12,36 @@ struct VALUE
     union
     {
         long long int_val;
-        double double_valt;
+        double double_val;
+        struct OBJECT*obj_val;
     };
 
     enum VALUE_TYPE type;
 };
+
+static struct VALUE create_value_from_int(long long int_val)
+{
+    struct VALUE val;
+    val.type = VALUE_TYPE_INTEGER;
+    val.int_val = int_val;
+    return val;
+}
+    
+static struct VALUE create_value_from_double(double double_val)
+{
+    struct VALUE val;
+    val.type = VALUE_TYPE_DOUBLE;
+    val.double_val = double_val;
+    return val;    
+}
+
+static struct VALUE create_value_from_obj(struct OBJECT*obj_val)
+{
+    struct VALUE val;
+    val.obj_val = obj_val;
+    val.type = VALUE_TYPE_OBJ;
+    return val;
+}
 
 struct PROPERTY
 {
@@ -91,18 +116,29 @@ void virtual_machine_run(virtual_machine_type_t vm)
         unsigned instruction;
 
         switch (instruction = READ_BYTE()) {
-        case BC_OP_POP:
+        case BC_OP_POP: {
+            virtual_machine_stack_pop(vm);
             break;
+        }
 
-        case BC_OP_CONSTANT:
-            break;
+        case BC_OP_CONSTANT: {
+            struct CONSTANT cnst = vm->bc->constant_pool[READ_BYTE()];
+            struct VALUE val = create_value_from_int(cnst.int_cnst);
+            virtual_machine_stack_push(vm, val);
+        }
 
-        case BC_OP_SET_LOCAL:
+        case BC_OP_SET_LOCAL: {
+            unsigned idx = READ_BYTE();
+            vm->stack[idx] = virtual_machine_stack_pop(vm);
             break;
-        case BC_OP_GET_LOCAL:
+        }
+        case BC_OP_GET_LOCAL: {
+            unsigned idx = READ_BYTE();
+            virtual_machine_stack_push(vm, vm->stack[idx]);
             break;
+        }
 
-        case BC_OP_CREATE_OBJ:
+        case BC_OP_CREATE_OBJ: 
             break;
         case BC_OP_INIT_OBJ_PROP:
             break;
@@ -112,39 +148,108 @@ void virtual_machine_run(virtual_machine_type_t vm)
         case BC_OP_SET_HEAP:
             break;
 
-        case BC_OP_LOGICAL_OR:
+        case BC_OP_LOGICAL_OR: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val || val2.int_val);
+            virtual_machine_stack_push(vm, res);                        
             break;
-        case BC_OP_LOGICAL_AND:
+        }
+        case BC_OP_LOGICAL_AND: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val && val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
+        }
 
-        case BC_OP_EQ_EQEQ:
+        case BC_OP_EQ_EQEQ: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val == val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
-        case BC_OP_EQ_NEQ:
+        }
+        case BC_OP_EQ_NEQ: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val != val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
+        }
 
-        case BC_OP_REL_LT:
+        case BC_OP_REL_LT: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val < val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
-        case BC_OP_REL_GT:
+        }
+        case BC_OP_REL_GT: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val > val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
-        case BC_OP_REL_LE:
+        }
+        case BC_OP_REL_LE: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val <= val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
-        case BC_OP_REL_GE:
+        }
+        case BC_OP_REL_GE: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val >= val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
+        }
 
-        case BC_OP_ADDITIVE_PLUS:
+        case BC_OP_ADDITIVE_PLUS: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val + val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
-        case BC_OP_ADDITIVE_MINUS:
+        }
+        case BC_OP_ADDITIVE_MINUS: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val - val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
+        }
 
-        case BC_OP_MULTIPLICATIVE_MUL:
+        case BC_OP_MULTIPLICATIVE_MUL: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val * val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
-        case BC_OP_MULTIPLICATIVE_DIV:
+        }
+        case BC_OP_MULTIPLICATIVE_DIV: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val / val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
-        case BC_OP_MULTIPLICATIVE_MOD:
+        }
+        case BC_OP_MULTIPLICATIVE_MOD: {
+            struct VALUE val1 = virtual_machine_stack_pop(vm);
+            struct VALUE val2 = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(val1.int_val % val2.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
+        }
 
-        case BC_OP_NEGATE:
+        case BC_OP_NEGATE: {
+            struct VALUE val = virtual_machine_stack_pop(vm);
+            struct VALUE res = create_value_from_int(-val.int_val);
+            virtual_machine_stack_push(vm, res);
             break;
+        }
 
         case BC_OP_RETURN:
             return;
