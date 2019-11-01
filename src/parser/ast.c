@@ -419,9 +419,11 @@ struct RETURN_STMT_AST*create_return_stmt_ast(struct ASSIGNMENT_EXPR_AST*result)
 static void dump_return_stmt_ast_to_file_inner(FILE*f, const struct RETURN_STMT_AST*ast, unsigned spaces_num)
 {
     PUT_SPACES(); fprintf(f, "<return_stmt>\n");
-    INC_SPACES_NUM();
-    dump_assignment_expr_ast_to_file_inner(f, ast->result, spaces_num);
-    DEC_SPACES_NUM();
+    if (ast->result != NULL) {
+        INC_SPACES_NUM();
+        dump_assignment_expr_ast_to_file_inner(f, ast->result, spaces_num);
+        DEC_SPACES_NUM();
+    }
     PUT_SPACES(); fprintf(f, "</return_stmt>\n");
 }
 

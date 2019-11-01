@@ -3,4 +3,6 @@ function fizz() {
         a : 1,
         b : 2,
     };
+
+    return;
 }

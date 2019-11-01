@@ -434,9 +434,11 @@ static enum BYTECODE_GENERATOR_CODES while_stmt_ast_bytecode_generate(bytecode_g
 
 static enum BYTECODE_GENERATOR_CODES return_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct RETURN_STMT_AST*ast)
 {
-    /* TODO */
-    
-    assignment_expr_ast_bytecode_generate(bc_gen, ast->result);
+    if (ast->result != NULL) {
+        assignment_expr_ast_bytecode_generate(bc_gen, ast->result);
+    }
+
+    PUSH_BACK(bc_gen->bc->op_codes, BC_OP_RETURN);
 
     return BYTECODE_GENERATOR_OK;    
 }
@@ -637,6 +639,10 @@ void dump_bytecode_to_xml_file(FILE*f, const bytecode_type_t bc)
 
         case BC_OP_NEGATE:
             fprintf(f, "\t\t<op>NEGATE</op>\n");
+            break;
+
+        case BC_OP_RETURN:
+            fprintf(f, "\t\t<op>RETURN</op>\n");
             break;
         }
 
