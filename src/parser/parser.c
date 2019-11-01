@@ -70,23 +70,12 @@ static enum PARSER_CODES variable_ast_read(struct PARSER*parser, struct VARIABLE
             lexer_next_token(parser->lexer, &(parser->tok));
             is_dot = 1;
         } else {
-            r = PARSER_INVALID_TOKEN;
-            goto err0;
+            break;
         }
     }
     (*variable) = create_variable_ast(idents, idents_len);
 
     return PARSER_OK;
-
- err0:
-    {
-        unsigned i;
-        for (i = 0; i < idents_len; i++) {
-            ident_ast_free(idents[i]);
-        }
-        free(idents);
-    }
-    return r;
 }
 
 static enum PARSER_CODES formal_parameters_list_ast_read(struct PARSER*parser, struct FORMAL_PARAMETERS_LIST_AST**formal_parameters_list)
@@ -225,7 +214,6 @@ static enum PARSER_CODES primary_expr_ast_read(struct PARSER*parser, struct PRIM
         }
         default: {
             struct VARIABLE_AST*var_name;
-
             r = variable_ast_read(parser, &var_name, ident);
             if (r != PARSER_OK) {
                 
@@ -265,7 +253,7 @@ static enum PARSER_CODES primary_expr_ast_read(struct PARSER*parser, struct PRIM
         token_free((parser->tok));
         lexer_next_token(parser->lexer, &(parser->tok));
 
-        (*primary_expr) = create_primary_expr_ast(logical_or_expr, AST_PRIMARY_EXPR_TYPE_LOGICAL_EXPR);
+        (*primary_expr) = create_primary_expr_ast(logical_or_expr, AST_PRIMARY_EXPR_TYPE_LOGICAL_OR_EXPR);
         
         break;
     }
@@ -810,59 +798,6 @@ static enum PARSER_CODES stmt_ast_read(struct PARSER*parser, struct STMT_AST**st
         lexer_next_token(parser->lexer, &(parser->tok));
         /* check, if name is part of variable or name is function name. */
         switch ((parser->tok)->token_type) {
-        case TOKEN_TYPE_EQ: {
-            struct ASSIGN_STMT_AST*assign_stmt;
-
-            struct IDENT_AST**idents = NULL;
-            unsigned idents_len = 0;
-            unsigned idents_cap = 0;
-            struct VARIABLE_AST*var_name;
-
-            struct ASSIGNMENT_EXPR_AST*assignment_expr;
-            
-            /* reading variable. */
-            PUSH_BACK(idents, ident);
-            var_name = create_variable_ast(idents, idents_len);
-            /* no check, because it could be only TOKEN_TYPE_EQ. */            
-            token_free((parser->tok));
-            lexer_next_token(parser->lexer, &(parser->tok));
-            
-            /* reading assignment expr. */
-            r = assignment_expr_ast_read(parser, &assignment_expr);
-            if (r != PARSER_OK) {
-                variable_ast_free(var_name);
-                goto err0;
-            }          
-
-            assign_stmt = create_assign_stmt_ast(var_name, assignment_expr);
-            (*stmt) = create_stmt_ast(assign_stmt, AST_STMT_TYPE_ASSIGN);
-            break;
-        }
-        case TOKEN_TYPE_DOT: {
-            struct ASSIGN_STMT_AST*assign_stmt;
-
-            struct VARIABLE_AST*var_name;
-            struct ASSIGNMENT_EXPR_AST*assignment_expr;
-
-            r = variable_ast_read(parser, &var_name, ident);
-            if (r != PARSER_OK) {
-                
-            }
-            
-            /* no check, because it could be only TOKEN_TYPE_EQ. */            
-            token_free((parser->tok));
-            lexer_next_token(parser->lexer, &(parser->tok));
-            /* reading assignment expr. */
-            r = assignment_expr_ast_read(parser, &assignment_expr);
-            if (r != PARSER_OK) {
-                variable_ast_free(var_name);
-                goto err0;
-            }
-
-            assign_stmt = create_assign_stmt_ast(var_name, assignment_expr);
-            (*stmt) = create_stmt_ast(assign_stmt, AST_STMT_TYPE_ASSIGN);
-            break;
-        }
         case TOKEN_TYPE_LPAREN: {
             struct FUNCTION_CALL_AST*function_call;
             
@@ -878,9 +813,33 @@ static enum PARSER_CODES stmt_ast_read(struct PARSER*parser, struct STMT_AST**st
             break;
         }
         default: {
-            r = PARSER_INVALID_TOKEN;
-            goto err0;
-            break;
+            struct ASSIGN_STMT_AST*assign_stmt;
+            struct VARIABLE_AST*var_name;
+            struct ASSIGNMENT_EXPR_AST*assignment_expr;
+
+            r = variable_ast_read(parser, &var_name, ident);
+            if (r != PARSER_OK) {
+                
+            }
+
+
+            if ((parser->tok)->token_type != TOKEN_TYPE_EQ) {
+                r = PARSER_INVALID_TOKEN;
+                goto err0;
+            }            
+            token_free((parser->tok));
+            lexer_next_token(parser->lexer, &(parser->tok));
+
+            /* reading assignment expr. */
+            r = assignment_expr_ast_read(parser, &assignment_expr);
+            if (r != PARSER_OK) {
+                variable_ast_free(var_name);
+                goto err0;
+            }
+
+            assign_stmt = create_assign_stmt_ast(var_name, assignment_expr);
+            (*stmt) = create_stmt_ast(assign_stmt, AST_STMT_TYPE_ASSIGN);
+                        
         }
         }
 
@@ -888,7 +847,6 @@ static enum PARSER_CODES stmt_ast_read(struct PARSER*parser, struct STMT_AST**st
             r = PARSER_INVALID_TOKEN;
             goto err0;
         }
-
         token_free((parser->tok));
         lexer_next_token(parser->lexer, &(parser->tok));
         

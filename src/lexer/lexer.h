@@ -23,6 +23,8 @@ void lexer_conf(lexer_type_t lexer, const char*fname);
  */
 void lexer_next_token(lexer_type_t lexer, struct TOKEN**token);
 
+void dump_lexer_to_xml_file(FILE*f, lexer_type_t lexer);
+
 void lexer_free(lexer_type_t lexer);
 
 struct POS
@@ -111,7 +113,9 @@ struct TOKEN
 };
 
 struct TOKEN*create_token();
-char*token_to_string(const struct TOKEN*tok);
+
+void token_to_xml_string(const struct TOKEN*tok, char*str, unsigned len);
+
 void token_free(struct TOKEN*tok);
 
 #endif  /* LEXER_H_INCLUDED */

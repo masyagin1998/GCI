@@ -1,5 +1,6 @@
 #include "lexer.h"
 #include "parser.h"
+#include "bytecode-generator.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -113,39 +114,36 @@ int parse_args(int argc, char**argv, struct INTERPRETER_PARAMS*params)
 
 void print_lexer_result(const char*fname, lexer_type_t lexer)
 {
-    struct TOKEN*tok;
     FILE*f = file_open(fname, "w");
-    
-    lexer_next_token(lexer, &tok);
-    while (tok->token_type != TOKEN_TYPE_EOF) {
-        char*str = token_to_string(tok);
-        fprintf(f, "%s\n", str);
-        SAFE_FREE(str);
-        token_free(tok);
-        lexer_next_token(lexer, &tok);
-    }
-
-    token_free(tok);
-
+    dump_lexer_to_xml_file(f, lexer);
     fclose(f);
 }
 
 void print_parser_result(const char*fname, const struct UNIT_AST*unit)
 {
     FILE*f = file_open(fname, "w");
-    dump_unit_ast_to_file(f, unit);
-    fclose(f);    
+    dump_unit_ast_to_xml_file(f, unit);
+    fclose(f);
+}
+
+void print_bytecode_result(const char*fname, const bytecode_type_t bc)
+{
+    FILE*f = file_open(fname, "w");
+    dump_bytecode_to_xml_file(f, bc);
+    fclose(f);
 }
 
 int main(int argc, char**argv)
 {
+    int code;
+    
     struct INTERPRETER_PARAMS params;
     lexer_type_t  lexer;
     parser_type_t parser;
-
-    enum PARSER_CODES pr;
+    bytecode_generator_type_t bc_gen;
 
     struct UNIT_AST*unit;
+    bytecode_type_t bc;
 
     parse_args(argc, argv, &params);
 
@@ -154,25 +152,26 @@ int main(int argc, char**argv)
 
     if (params.mode == INTERPRETER_LEX) {
         print_lexer_result(params.out, lexer);
-        goto end0;
+        exit(0);
     }
 
     parser = create_parser();
     parser_conf(parser, lexer);
-    pr = parser_parse(parser, &unit);
-    if (pr != PARSER_OK) {
-        goto end0;
-    }
+    code = parser_parse(parser, &unit);
 
     if (params.mode == INTERPRETER_PARSE) {
         print_parser_result(params.out, unit);
-        goto end1;
+        exit(0);
     }
 
- end1:
-    parser_free(parser);
- end0:
-    lexer_free(lexer);    
+    bc_gen = create_bytecode_generator();
+    bytecode_generator_conf(bc_gen, unit);
+    code = bytecode_generator_generate(bc_gen, &bc);
+
+    if (params.mode == INTERPRETER_BC) {
+        print_bytecode_result(params.out, bc);
+        exit(0);
+    }
 
     return 0;
 }

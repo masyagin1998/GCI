@@ -281,6 +281,26 @@ void lexer_next_token(lexer_type_t lexer, struct TOKEN**tok)
     (*tok)->frag.following = (*cur);
 }
 
+void dump_lexer_to_xml_file(FILE*f, lexer_type_t lexer)
+{
+    struct TOKEN*tok;
+    char tmp_str[4096];
+
+    fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    fprintf(f, "<tokens>\n");
+
+    lexer_next_token(lexer, &tok);
+    while (tok->token_type != TOKEN_TYPE_EOF) {
+        token_to_xml_string(tok, tmp_str, sizeof(tmp_str));
+        fprintf(f, "\t%s\n", tmp_str);
+        token_free(tok);
+        lexer_next_token(lexer, &tok);
+    }
+    token_free(tok);
+
+    fprintf(f, "</tokens>\n");        
+}
+
 void lexer_free(lexer_type_t lexer)
 {
     SAFE_FREE(lexer->program);

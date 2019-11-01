@@ -134,37 +134,33 @@ void token_read_unknown(struct TOKEN**tok, const struct POS*pos)
 
 #define TOKEN_GEN_STR(group_type)                                       \
     do {                                                                \
-        snprintf(str, STR_BUF_SIZE, "[%u:%u] %s: %.*s",                 \
-                 tok->frag.starting.line, tok->frag.starting.pos,       \
+        snprintf(str, len, "<%s line=\"%u\" pos=\"%u\">%.*s</%s>",      \
                  group_type,                                            \
+                 tok->frag.starting.line, tok->frag.starting.pos,       \
                  tok->frag.following.index - tok->frag.starting.index,  \
-                 tok->frag.starting.program + tok->frag.starting.index); \
+                 tok->frag.starting.program + tok->frag.starting.index, \
+                 group_type);                                           \
     } while(0)                                                          \
         
-char*token_to_string(const struct TOKEN*tok)
+void token_to_xml_string(const struct TOKEN*tok, char*str, unsigned len)
 {
-    char*str = NULL;
-    SAFE_MALLOC(str, STR_BUF_SIZE);
-
     switch (tok->group_type) {
     case GROUP_TYPE_KEYWORDS:
-        TOKEN_GEN_STR("KEYWORD");
+        TOKEN_GEN_STR("keyword");
         break;
     case GROUP_TYPE_IDENTS:
-        TOKEN_GEN_STR("IDENT");
+        TOKEN_GEN_STR("ident");
         break;
     case GROUP_TYPE_NUMBERS:
-        TOKEN_GEN_STR("NUMBER");
+        TOKEN_GEN_STR("number");
         break;
     case GROUP_TYPE_OPS:
-        TOKEN_GEN_STR("OPERATOR");
+        TOKEN_GEN_STR("operator");
         break;
     case GROUP_TYPE_AUX:
-        TOKEN_GEN_STR("AUX");
+        TOKEN_GEN_STR("aux");
         break;
     }
-
-    return str;
 }
 
 void token_free(struct TOKEN*tok)

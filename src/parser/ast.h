@@ -14,7 +14,7 @@ struct UNIT_AST
 };
 
 struct UNIT_AST*create_unit_ast(struct FUNCTION_DECL_AST**functions, unsigned functions_len);
-void dump_unit_ast_to_file(FILE*f, const struct UNIT_AST*ast);
+void dump_unit_ast_to_xml_file(FILE*f, const struct UNIT_AST*ast);
 void unit_ast_free(struct UNIT_AST*ast);
 
 /*

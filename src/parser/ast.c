@@ -30,11 +30,12 @@ struct UNIT_AST*create_unit_ast(struct FUNCTION_DECL_AST**functions, unsigned fu
 
 static void dump_function_decl_ast_to_file_inner(FILE*f, const struct FUNCTION_DECL_AST*ast, unsigned spaces_num);
 
-void dump_unit_ast_to_file(FILE*f, const struct UNIT_AST*ast)
+void dump_unit_ast_to_xml_file(FILE*f, const struct UNIT_AST*ast)
 {
     unsigned i;
     unsigned spaces_num = 0;
 
+    fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");    
     fprintf(f, "<unit>\n");
     INC_SPACES_NUM();
     for (i = 0; i < ast->functions_len; i++) {
@@ -86,7 +87,7 @@ static void dump_function_decl_ast_to_file_inner(FILE*f, const struct FUNCTION_D
     dump_body_ast_to_file_inner(f, ast->body, spaces_num);
     DEC_SPACES_NUM();
 
-    PUT_SPACES(); fprintf(f, "</function>\n\n");
+    PUT_SPACES(); fprintf(f, "</function>\n");
 }
 
 void function_decl_ast_free(struct FUNCTION_DECL_AST*ast)
@@ -534,13 +535,13 @@ static void dump_object_literal_ast_to_file_inner(FILE*f, const struct OBJECT_LI
 {
     unsigned i;
     
-    PUT_SPACES(); fprintf(f, "<object literal>\n");
+    PUT_SPACES(); fprintf(f, "<object_literal>\n");
     INC_SPACES_NUM();
     for (i = 0; i < ast->properties_len; i++) {
         dump_property_ast_to_file_inner(f, ast->properties[i], spaces_num);
     }
     DEC_SPACES_NUM();
-    PUT_SPACES(); fprintf(f, "</object literal>\n");
+    PUT_SPACES(); fprintf(f, "</object_literal>\n");
 }
 
 void object_literal_ast_free(struct OBJECT_LITERAL_AST*ast)

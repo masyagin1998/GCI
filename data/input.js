@@ -1,8 +1,6 @@
 function fizz() {
-    a = {
-        k1: 1,
-        k2: {
-            v: 2,
-        }
+    let a = {
+        a : 1,
+        b : 2,
     };
 }

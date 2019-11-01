@@ -31,8 +31,11 @@ enum BC_OP_CODES
     BC_OP_GET_LOCAL, /* get local variable value */
     BC_OP_SET_LOCAL, /* set local variable value */
 
-    BC_OP_GET_HEAP, /* get heap variable value */ 
-    BC_OP_SET_HEAP, /* set heap variable value */
+    BC_OP_CREATE_OBJ,    /* create object in heap         */
+    BC_OP_INIT_OBJ_PROP, /* initialize object's property. */
+
+    BC_OP_GET_HEAP,   /* get heap variable value */
+    BC_OP_SET_HEAP,   /* set heap variable value */
 
     BC_OP_LOGICAL_OR,
     BC_OP_LOGICAL_AND,
@@ -55,56 +58,50 @@ enum BC_OP_CODES
     BC_OP_NEGATE,
 };
 
-enum VALUE_TYPE
+enum CONSTANT_TYPE
 {
-    VALUE_TYPE_INT,
-    VALUE_TYPE_DOUBLE,
+    CONSTANT_TYPE_INTEGER,
+    CONSTANT_TYPE_DOUBLE,
+
+    CONSTANT_TYPE_FIELDREF,
+
+    CONSTANT_TYPE_FUNCTIONREF,
 };
 
-struct VALUE
+struct CONSTANT
 {
     union
     {
-        long long int_val;
-        double double_val;
+        long long int_cnst;
+        double double_cnst;
+        char str_cnst[32];
     };
     
-    enum VALUE_TYPE type;
+    enum CONSTANT_TYPE type;
 };
 
-struct VALUE create_value_from_int(long long int_val);
-
-struct VALUE create_value_from_double(double double_val);
-
-struct LOCAL_VARIABLE
-{
-    char name[32];
-    unsigned depth;
-};
-
-struct LOCAL_VARIABLE create_local_variable(const char*name, unsigned depth);
+struct CONSTANT create_constant_from_int(long long int_cnst);
+struct CONSTANT create_constant_from_double(double double_cnst);
+struct CONSTANT create_constant_from_fieldred(const char*str_cnst);
+struct CONSTANT create_constant_from_functionref(const char*str_cnst);
 
 struct BYTECODE
 {
-    long long*op_codes;
+    unsigned*op_codes;
     unsigned op_codes_len;
     unsigned op_codes_cap;
 
-    struct VALUE*values;
-    unsigned values_len;
-    unsigned values_cap;
-
-    struct LOCAL_VARIABLE*locals;
-    unsigned locals_len;
-    unsigned locals_cap;
-
-    unsigned scope_depth;
+    struct CONSTANT*constant_pool;
+    unsigned constant_pool_len;
+    unsigned constant_pool_cap;
 };
 
 typedef struct BYTECODE* bytecode_type_t;
 
 bytecode_type_t create_bytecode();
 
-void free_bytecode(bytecode_type_t bc);
+void dump_bytecode_to_xml_file(FILE*f, const bytecode_type_t bc);
+
+void bytecode_free(bytecode_type_t bc);
 
 #endif  /* BYTECODE_GENERATRO_H_INCLUDED */
