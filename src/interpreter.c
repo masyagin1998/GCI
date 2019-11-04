@@ -135,7 +135,7 @@ void print_bytecode_result(const char*fname, const bytecode_type_t bc)
 }
 
 #define STACK_SIZE 1024
-#define HEAP_SIZE  16 * 1024 * 1024
+#define HEAP_SIZE  1024
 
 int main(int argc, char**argv)
 {

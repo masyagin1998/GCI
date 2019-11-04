@@ -1,5 +1,7 @@
 #include "virtual-machine.h"
 
+#include "allocator.h"
+
 enum VALUE_TYPE
 {
     VALUE_TYPE_INTEGER,
@@ -9,6 +11,8 @@ enum VALUE_TYPE
 
 struct VALUE
 {
+    unsigned mark;
+    
     union
     {
         long long int_val;
@@ -43,23 +47,6 @@ static struct VALUE create_value_from_obj(struct OBJECT*obj_val)
     return val;
 }
 
-struct PROPERTY
-{
-    unsigned key;
-    struct VALUE val;
-};
-
-struct OBJECT
-{
-    struct OBJECT*prev, *next;
-
-    struct PROPERTY*properties;
-    unsigned properties_len;
-    unsigned properties_cap;
-
-    unsigned obj_len;
-};
-
 struct VIRTUAL_MACHINE
 {
     bytecode_type_t bc;
@@ -69,11 +56,7 @@ struct VIRTUAL_MACHINE
     struct VALUE*stack_top;
     unsigned stack_cap;
 
-    char*heap;
-    unsigned heap_cap;
-
-    struct OBJECT*first, *last;
-    unsigned count;
+    allocator_type_t allocator;
 };
 
 virtual_machine_type_t create_virtual_machine()
@@ -89,11 +72,11 @@ void virtual_machine_conf(virtual_machine_type_t vm, bytecode_type_t bc, unsigne
     vm->ip = bc->op_codes;
     
     vm->stack_cap = stack_size;
-    SAFE_MALLOC(vm->stack, stack_size);
+    SAFE_MALLOC(vm->stack, vm->stack_cap);
     vm->stack_top = vm->stack;
 
-    vm->heap_cap = heap_size_b;
-    SAFE_MALLOC(vm->heap, vm->heap_cap);
+    vm->allocator = create_allocator();
+    allocator_conf(vm->allocator, heap_size_b);
 }
 
 static void virtual_machine_stack_push(virtual_machine_type_t vm, struct VALUE val)
@@ -110,12 +93,46 @@ static struct VALUE virtual_machine_stack_pop(virtual_machine_type_t vm)
 
 #define READ_BYTE() (*(vm->ip++))
 
+struct PROPERTY
+{
+    unsigned long long key;
+    struct VALUE val;
+};
+
+struct OBJECT
+{
+    unsigned properties_len;
+    unsigned properties_cap;
+    struct PROPERTY properties[];
+};
+
+struct OBJECT*create_obj(virtual_machine_type_t vm)
+{
+    unsigned i;
+
+    unsigned properties_num = READ_BYTE();
+    
+    struct OBJECT*obj = allocator_malloc_mem(vm->allocator, sizeof(struct OBJECT) + sizeof(struct PROPERTY) * properties_num * 2);
+    
+    for (i = 0; i < properties_num; i++) {
+        struct VALUE key = virtual_machine_stack_pop(vm);
+        struct VALUE val = virtual_machine_stack_pop(vm);
+        
+        obj->properties[i].key = key.int_val;
+        obj->properties[i].val = val;
+    }
+    
+    obj->properties_len = properties_num;
+    obj->properties_cap = properties_num * 2;
+
+    return obj;
+}
+
 void virtual_machine_run(virtual_machine_type_t vm)
 {
     while (1) {
-        unsigned instruction;
-
-        switch (instruction = READ_BYTE()) {
+        unsigned instruction = READ_BYTE();
+        switch (instruction) {
         case BC_OP_POP: {
             virtual_machine_stack_pop(vm);
             break;
@@ -125,11 +142,12 @@ void virtual_machine_run(virtual_machine_type_t vm)
             struct CONSTANT cnst = vm->bc->constant_pool[READ_BYTE()];
             struct VALUE val = create_value_from_int(cnst.int_cnst);
             virtual_machine_stack_push(vm, val);
+            break;
         }
 
         case BC_OP_SET_LOCAL: {
             unsigned idx = READ_BYTE();
-            vm->stack[idx] = virtual_machine_stack_pop(vm);
+            vm->stack[idx] = *(vm->stack_top - 1);
             break;
         }
         case BC_OP_GET_LOCAL: {
@@ -138,27 +156,91 @@ void virtual_machine_run(virtual_machine_type_t vm)
             break;
         }
 
-        case BC_OP_CREATE_OBJ: 
+        case BC_OP_CREATE_OBJ: {
+            struct OBJECT*obj = create_obj(vm);
+            struct VALUE val = create_value_from_obj(obj);
+            virtual_machine_stack_push(vm, val);
             break;
-        case BC_OP_INIT_OBJ_PROP:
+        }
+        case BC_OP_INIT_OBJ_PROP: {
+            struct VALUE val = create_value_from_int(READ_BYTE());
+            virtual_machine_stack_push(vm, val);
             break;
-
-        case BC_OP_GET_HEAP:
+        }
+        case BC_OP_SET_HEAP: {
+            unsigned i, j;
+            unsigned idx = READ_BYTE();
+            unsigned len = READ_BYTE();
+            struct VALUE val = vm->stack[idx];
+            for (i = 0; i < len; i++) {
+                unsigned key = READ_BYTE();
+                unsigned found = 0;
+                for (j = 0; j < val.obj_val->properties_len; j++) {
+                    if (val.obj_val->properties[j].key == key) {
+                        if (i < len - 1) {
+                            val = val.obj_val->properties[j].val;
+                            found = 1;
+                            break;
+                        } else if (i == len - 1) {
+                            val.obj_val->properties[j].val = *(vm->stack_top - 1);
+                            found = 1;
+                            break;                            
+                        }
+                    }
+                }
+                if (!found) {
+                    if (i < len - 1) {
+                        printf("need to create to many fields\n");
+                        exit(1);
+                    } else {
+                        if (val.obj_val->properties_len == val.obj_val->properties_cap) {
+                            printf("TODO: %d %d\n", val.obj_val->properties_len, val.obj_val->properties_cap);
+                            exit(1);
+                        } else {
+                            val.obj_val->properties_len++;
+                            val.obj_val->properties[j].key = key;
+                            val.obj_val->properties[j].val = *(vm->stack_top - 1);
+                        }
+                    }
+                }
+            }
             break;
-        case BC_OP_SET_HEAP:
+        }
+        case BC_OP_GET_HEAP: {
+            unsigned i, j;
+            unsigned idx = READ_BYTE();
+            unsigned len = READ_BYTE();
+            struct VALUE val = vm->stack[idx];
+            for (i = 0; i < len; i++) {
+                unsigned key = READ_BYTE();
+                unsigned found = 0;
+                for (j = 0; j < val.obj_val->properties_len; j++) {
+                    if (val.obj_val->properties[j].key == key) {
+                        val = val.obj_val->properties[j].val;
+                        found = 1;
+                        break;
+                    }
+                }
+                if (!found) {
+                    printf("unknown fieldref: %d\n", key);
+                    exit(1);
+                }                
+            }
+            virtual_machine_stack_push(vm, val);
             break;
+        }
 
         case BC_OP_LOGICAL_OR: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val || val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val || val1.int_val);
             virtual_machine_stack_push(vm, res);                        
             break;
         }
         case BC_OP_LOGICAL_AND: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val && val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val && val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -166,14 +248,14 @@ void virtual_machine_run(virtual_machine_type_t vm)
         case BC_OP_EQ_EQEQ: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val == val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val == val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
         case BC_OP_EQ_NEQ: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val != val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val != val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -181,28 +263,28 @@ void virtual_machine_run(virtual_machine_type_t vm)
         case BC_OP_REL_LT: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val < val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val < val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
         case BC_OP_REL_GT: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val > val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val > val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
         case BC_OP_REL_LE: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val <= val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val <= val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
         case BC_OP_REL_GE: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val >= val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val >= val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -210,14 +292,14 @@ void virtual_machine_run(virtual_machine_type_t vm)
         case BC_OP_ADDITIVE_PLUS: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val + val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val + val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
         case BC_OP_ADDITIVE_MINUS: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val - val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val - val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -225,21 +307,21 @@ void virtual_machine_run(virtual_machine_type_t vm)
         case BC_OP_MULTIPLICATIVE_MUL: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val * val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val * val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
         case BC_OP_MULTIPLICATIVE_DIV: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val / val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val / val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
         case BC_OP_MULTIPLICATIVE_MOD: {
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
-            struct VALUE res = create_value_from_int(val1.int_val % val2.int_val);
+            struct VALUE res = create_value_from_int(val2.int_val % val1.int_val);
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -251,9 +333,12 @@ void virtual_machine_run(virtual_machine_type_t vm)
             break;
         }
 
-        case BC_OP_RETURN:
+        case BC_OP_RETURN: {
+            struct VALUE val = virtual_machine_stack_pop(vm);
+            printf("result: %lld\n", val.int_val);
             return;
             break;
+        }
         }
     }
 }
@@ -261,7 +346,6 @@ void virtual_machine_run(virtual_machine_type_t vm)
 void virtual_machine_free(virtual_machine_type_t vm)
 {
     SAFE_FREE(vm->stack);
-    /* clear list. */
-    SAFE_FREE(vm->heap);
+    allocator_free(vm->allocator);
     SAFE_FREE(vm);
 }

@@ -21,6 +21,7 @@ struct BYTECODE_GENERATOR
 struct CONSTANT create_constant_from_int(long long int_cnst)
 {
     struct CONSTANT cnst;
+    memset(&cnst, 0, sizeof(cnst));
     cnst.int_cnst = int_cnst;
     cnst.type = CONSTANT_TYPE_INTEGER;
     return cnst;
@@ -29,14 +30,16 @@ struct CONSTANT create_constant_from_int(long long int_cnst)
 struct CONSTANT create_constant_from_double(double double_cnst)
 {
     struct CONSTANT cnst;
+    memset(&cnst, 0, sizeof(cnst));
     cnst.double_cnst = double_cnst;
     cnst.type = CONSTANT_TYPE_DOUBLE;
     return cnst;
 }
 
-struct CONSTANT create_constant_from_fieldred(const char*str_cnst)
+struct CONSTANT create_constant_from_fieldref(const char*str_cnst)
 {
     struct CONSTANT cnst;
+    memset(&cnst, 0, sizeof(cnst));
     strncpy(cnst.str_cnst, str_cnst, sizeof(cnst.str_cnst));
     cnst.type = CONSTANT_TYPE_FIELDREF;
     return cnst;
@@ -45,6 +48,7 @@ struct CONSTANT create_constant_from_fieldred(const char*str_cnst)
 struct CONSTANT create_constant_from_functionref(const char*str_cnst)
 {
     struct CONSTANT cnst;
+    memset(&cnst, 0, sizeof(cnst));
     strncpy(cnst.str_cnst, str_cnst, sizeof(cnst.str_cnst));
     cnst.type = CONSTANT_TYPE_FUNCTIONREF;
     return cnst;
@@ -55,7 +59,7 @@ static int constant_pool_push_back(bytecode_type_t bc, struct CONSTANT cnst)
     unsigned i;
 
     for (i = 0; i < bc->constant_pool_len; i++) {
-        if (memcmp((char*) &cnst, (char*) bc->constant_pool + i, sizeof(struct CONSTANT)) == 0) {
+        if (memcmp((char*) &cnst, (char*) (bc->constant_pool + i), sizeof(struct CONSTANT)) == 0) {
             return i;
         }
     }
@@ -117,7 +121,7 @@ static enum BYTECODE_GENERATOR_CODES property_ast_bytecode_generate(bytecode_gen
     assignment_expr_ast_bytecode_generate(bc_gen, ast->value);
 
     PUSH_BACK(bc_gen->bc->op_codes, BC_OP_INIT_OBJ_PROP);
-    cnst = create_constant_from_fieldred(ast->key->ident);
+    cnst = create_constant_from_fieldref(ast->key->ident);
     PUSH_BACK(bc_gen->bc->op_codes, constant_pool_push_back(bc_gen->bc, cnst));
 
     return BYTECODE_GENERATOR_OK;
@@ -132,7 +136,7 @@ static enum BYTECODE_GENERATOR_CODES object_literal_ast_bytecode_generate(byteco
     }
 
     PUSH_BACK(bc_gen->bc->op_codes, BC_OP_CREATE_OBJ);
-    PUSH_BACK(bc_gen->bc->op_codes, ast->properties_len);
+    PUSH_BACK(bc_gen->bc->op_codes, ast->properties_len);    
 
     return BYTECODE_GENERATOR_OK;
 }
@@ -165,7 +169,7 @@ static enum BYTECODE_GENERATOR_CODES variable_ast_bytecode_generate(bytecode_gen
         PUSH_BACK(bc_gen->bc->op_codes, idx);
         PUSH_BACK(bc_gen->bc->op_codes, ast->idents_len - 1);
         for (i = 1; i < ast->idents_len; i++) {
-            struct CONSTANT cnst = create_constant_from_fieldred(ast->idents[i]->ident);
+            struct CONSTANT cnst = create_constant_from_fieldref(ast->idents[i]->ident);
             PUSH_BACK(bc_gen->bc->op_codes, constant_pool_push_back(bc_gen->bc, cnst));
         }
     }
@@ -403,12 +407,12 @@ static enum BYTECODE_GENERATOR_CODES assign_stmt_ast_bytecode_generate(bytecode_
         PUSH_BACK(bc_gen->bc->op_codes, idx);
         PUSH_BACK(bc_gen->bc->op_codes, ast->var_name->idents_len - 1);
         for (i = 1; i < ast->var_name->idents_len; i++) {
-            struct CONSTANT cnst = create_constant_from_fieldred(ast->var_name->idents[i]->ident);
+            struct CONSTANT cnst = create_constant_from_fieldref(ast->var_name->idents[i]->ident);
             PUSH_BACK(bc_gen->bc->op_codes, constant_pool_push_back(bc_gen->bc, cnst));
         }
     }
 
-    return BYTECODE_GENERATOR_OK;    
+    return BYTECODE_GENERATOR_OK;
 }
 
 enum BYTECODE_GENERATOR_CODES function_call_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct FUNCTION_CALL_STMT_AST*ast)
