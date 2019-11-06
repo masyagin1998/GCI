@@ -28,36 +28,39 @@ enum BC_OP_CODES
  
     BC_OP_CONSTANT, /* push constant to stack */
 
-    BC_OP_GET_LOCAL, /* get local variable value */
-    BC_OP_SET_LOCAL, /* set local variable value */
+    BC_OP_CREATE_LOCAL, /* create local variable value. */
+    BC_OP_GET_LOCAL,    /* get local variable value.    */
+    BC_OP_SET_LOCAL,    /* set local variable value.    */
 
-    BC_OP_CREATE_OBJ,    /* create object in heap         */
+    BC_OP_CREATE_OBJ,    /* create object in heap.        */
     BC_OP_INIT_OBJ_PROP, /* initialize object's property. */
+    BC_OP_GET_HEAP,      /* get heap variable value.      */
+    BC_OP_SET_HEAP,      /* set heap variable value.      */
 
-    BC_OP_GET_HEAP,   /* get heap variable value */
-    BC_OP_SET_HEAP,   /* set heap variable value */
+    BC_OP_LOGICAL_OR,  /* || */
+    BC_OP_LOGICAL_AND, /* && */
 
-    BC_OP_LOGICAL_OR,
-    BC_OP_LOGICAL_AND,
+    BC_OP_EQ_EQEQ, /* == */
+    BC_OP_EQ_NEQ,  /* != */
 
-    BC_OP_EQ_EQEQ,
-    BC_OP_EQ_NEQ,
+    BC_OP_REL_LT, /* <  */
+    BC_OP_REL_GT, /* >  */
+    BC_OP_REL_LE, /* <= */
+    BC_OP_REL_GE, /* >= */
 
-    BC_OP_REL_LT,
-    BC_OP_REL_GT,
-    BC_OP_REL_LE,
-    BC_OP_REL_GE,
+    BC_OP_ADDITIVE_PLUS,  /* + */
+    BC_OP_ADDITIVE_MINUS, /* - */
 
-    BC_OP_ADDITIVE_PLUS,
-    BC_OP_ADDITIVE_MINUS,
+    BC_OP_MULTIPLICATIVE_MUL, /* * */
+    BC_OP_MULTIPLICATIVE_DIV, /* / */
+    BC_OP_MULTIPLICATIVE_MOD, /* % */
 
-    BC_OP_MULTIPLICATIVE_MUL,
-    BC_OP_MULTIPLICATIVE_DIV,
-    BC_OP_MULTIPLICATIVE_MOD,
+    BC_OP_NEGATE, /* - */
 
-    BC_OP_NEGATE,
+    BC_OP_JUMP_IF_FALSE, /* conditional jump.   */
+    BC_OP_JUMP,          /* unconditional jump. */
 
-    BC_OP_RETURN,
+    BC_OP_RETURN, /* return from function */
 };
 
 enum CONSTANT_TYPE

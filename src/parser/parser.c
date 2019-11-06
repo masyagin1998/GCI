@@ -85,7 +85,9 @@ static enum PARSER_CODES formal_parameters_list_ast_read(struct PARSER*parser, s
     unsigned idents_len = 0;
     unsigned idents_cap = 0;
 
-    /* no check, because it could be only TOKEN_TYPE_LPAREN. */
+    if ((parser->tok)->token_type != TOKEN_TYPE_LPAREN) {
+        
+    }
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
     
@@ -108,7 +110,9 @@ static enum PARSER_CODES formal_parameters_list_ast_read(struct PARSER*parser, s
         lexer_next_token(parser->lexer, &(parser->tok));
     }
 
-    /* no check, because it could be only TOKEN_TYPE_RPAREN. */
+    if ((parser->tok)->token_type != TOKEN_TYPE_RPAREN) {
+        
+    }
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
@@ -121,7 +125,9 @@ static enum PARSER_CODES assignment_expr_ast_read(struct PARSER*parser, struct A
 
 static enum PARSER_CODES number_ast_read(struct PARSER*parser, struct NUMBER_AST**number)
 {
-    /* no check, because it could be only TOKEN_TYPE_NUMBER. */
+    if ((parser->tok)->token_type != TOKEN_TYPE_NUMBER) {
+        
+    }    
     (*number) = create_number_ast((parser->tok)->int_val);
 
     token_free((parser->tok));
@@ -137,7 +143,9 @@ static enum PARSER_CODES args_list_ast_read(struct PARSER*parser, struct ARGS_LI
     unsigned assignment_exprs_len = 0;
     unsigned assignment_exprs_cap = 0;
 
-    /* no check, because it could be only TOKEN_TYPE_LPAREN. */
+    if ((parser->tok)->token_type != TOKEN_TYPE_LPAREN) {
+        
+    }    
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
     
@@ -161,7 +169,9 @@ static enum PARSER_CODES args_list_ast_read(struct PARSER*parser, struct ARGS_LI
         lexer_next_token(parser->lexer, &(parser->tok));
     }
 
-    /* no check, because it could be only TOKEN_TYPE_RPAREN. */
+    if ((parser->tok)->token_type != TOKEN_TYPE_RPAREN) {
+        
+    }    
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
@@ -249,7 +259,9 @@ static enum PARSER_CODES primary_expr_ast_read(struct PARSER*parser, struct PRIM
             
         }
 
-        /* no check, because it could be only TOKEN_TYPE_RPAREN. */
+        if ((parser->tok)->token_type != TOKEN_TYPE_RPAREN) {
+
+        }        
         token_free((parser->tok));
         lexer_next_token(parser->lexer, &(parser->tok));
 
@@ -561,7 +573,9 @@ static enum PARSER_CODES object_literal_ast_read(struct PARSER*parser, struct OB
     unsigned properties_len = 0;
     unsigned properties_cap = 0;
     
-    /* no check, because it could be only TOKEN_TYPE_LBRACE. */
+    if ((parser->tok)->token_type != TOKEN_TYPE_LBRACE) {
+        
+    }    
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
@@ -584,7 +598,9 @@ static enum PARSER_CODES object_literal_ast_read(struct PARSER*parser, struct OB
         lexer_next_token(parser->lexer, &(parser->tok));
     }
 
-    /* no check, because it could be only TOKEN_TYPE_RBRACE. */
+    if ((parser->tok)->token_type != TOKEN_TYPE_RBRACE) {
+        
+    }    
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
@@ -638,7 +654,9 @@ static enum PARSER_CODES decl_stmt_ast_read(struct PARSER*parser, struct DECL_ST
     struct IDENT_AST*var_name;
     struct ASSIGNMENT_EXPR_AST*assignment_expr;
     
-    /* no check, because it could be only TOKEN_TYPE_LET. */
+    if ((parser->tok)->token_type != TOKEN_TYPE_LET) {
+        
+    }    
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
@@ -692,7 +710,75 @@ static enum PARSER_CODES body_ast_read(struct PARSER*parser, struct BODY_AST**bo
 
 static enum PARSER_CODES if_stmt_ast_read(struct PARSER*parser, struct IF_STMT_AST**if_stmt)
 {
-    
+    enum PARSER_CODES r;
+    struct LOGICAL_OR_EXPR_AST*condition;
+    struct BODY_AST*if_body;
+    struct BODY_AST*else_body;
+    struct IF_STMT_AST*if_stmt_inner;
+
+    if ((parser->tok)->token_type != TOKEN_TYPE_IF) {
+        
+    }
+    token_free((parser->tok));
+    lexer_next_token(parser->lexer, &(parser->tok));
+
+    if ((parser->tok)->token_type != TOKEN_TYPE_LPAREN) {
+        
+    }
+    token_free((parser->tok));
+    lexer_next_token(parser->lexer, &(parser->tok));
+
+    r = logical_or_expr_ast_read(parser, &condition);
+    if (r != PARSER_OK) {
+        
+    }
+    if ((parser->tok)->token_type != TOKEN_TYPE_RPAREN) {
+        
+    }
+    token_free((parser->tok));
+    lexer_next_token(parser->lexer, &(parser->tok));
+
+    r = body_ast_read(parser, &if_body);
+    if (r != PARSER_OK) {
+        
+    }
+
+    if ((parser->tok)->token_type != TOKEN_TYPE_ELSE) {
+        (*if_stmt) = create_if_stmt_ast(condition, if_body, NULL);
+        return PARSER_OK;
+    }
+    token_free((parser->tok));
+    lexer_next_token(parser->lexer, &(parser->tok));
+
+    if ((parser->tok)->token_type == TOKEN_TYPE_LBRACE) {
+        r = body_ast_read(parser, &else_body);
+        if (r != PARSER_OK) {
+            
+        }
+        (*if_stmt) = create_if_stmt_ast(condition, if_body, else_body);
+        return PARSER_OK;
+    } else if ((parser->tok)->token_type == TOKEN_TYPE_IF) {
+        struct STMT_AST**stmts = NULL;
+        unsigned stmts_len = 0;
+        unsigned stmts_cap = 0;
+
+        struct STMT_AST*stmt;
+        
+        r = if_stmt_ast_read(parser, &if_stmt_inner);
+        if (r != PARSER_OK) {
+            
+        }
+
+        stmt = create_stmt_ast(if_stmt_inner, AST_STMT_TYPE_IF);
+        PUSH_BACK(stmts, stmt);
+        else_body = create_body_ast(stmts, stmts_len);
+
+        (*if_stmt) = create_if_stmt_ast(condition, if_body, else_body);
+
+        return PARSER_OK;
+    }
+
+    /* ERROR. */
 }
 
 static enum PARSER_CODES while_stmt_ast_read(struct PARSER*parser, struct WHILE_STMT_AST**while_stmt)
@@ -701,7 +787,9 @@ static enum PARSER_CODES while_stmt_ast_read(struct PARSER*parser, struct WHILE_
     struct LOGICAL_OR_EXPR_AST*condition;
     struct BODY_AST*body;
 
-    /* no check, because it could be only TOKEN_TYPE_WHILE. */
+    if ((parser->tok)->token_type != TOKEN_TYPE_WHILE) {
+        
+    }
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
@@ -744,7 +832,9 @@ static enum PARSER_CODES return_stmt_ast_read(struct PARSER*parser, struct RETUR
     enum PARSER_CODES r;    
     struct ASSIGNMENT_EXPR_AST*assignment_expr;
     
-    /* no check, because it could be only TOKEN_TYPE_RETURN. */
+    if ((parser->tok)->token_type != TOKEN_TYPE_RETURN) {
+        
+    }    
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
@@ -916,7 +1006,9 @@ static enum PARSER_CODES body_ast_read(struct PARSER*parser, struct BODY_AST**bo
         PUSH_BACK(stmts, stmt);
     }
 
-    /* no check, because it could be only TOKEN_TYPE_RBRACE. */
+    if ((parser->tok)->token_type != TOKEN_TYPE_RBRACE) {
+        
+    }    
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 

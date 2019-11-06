@@ -357,11 +357,35 @@ struct IF_STMT_AST*create_if_stmt_ast(struct LOGICAL_OR_EXPR_AST*condition,
     return if_stmt;
 }
 
+
+static void dump_logical_or_expr_ast_to_file_inner(FILE*f, const struct LOGICAL_OR_EXPR_AST*ast, unsigned spaces_num);
+
 static void dump_if_stmt_ast_to_file_inner(FILE*f, const struct IF_STMT_AST*ast, unsigned spaces_num)
 {
-    (void)f;
-    (void)ast;
-    (void)spaces_num;
+    PUT_SPACES(); fprintf(f, "<if_stmt>\n");
+    INC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "<condition>\n");
+    INC_SPACES_NUM();
+    dump_logical_or_expr_ast_to_file_inner(f, ast->condition, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</condition>\n");
+
+    PUT_SPACES(); fprintf(f, "<if_body>\n");
+    INC_SPACES_NUM();
+    dump_body_ast_to_file_inner(f, ast->if_body, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</if_body>\n");
+
+    if (ast->else_body != NULL) {
+        PUT_SPACES(); fprintf(f, "<else_body>\n");
+        INC_SPACES_NUM();
+        dump_body_ast_to_file_inner(f, ast->else_body, spaces_num);
+        DEC_SPACES_NUM();
+        PUT_SPACES(); fprintf(f, "</else_body>\n");
+    }
+
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</if_stmt>\n");
 }
 
 void if_stmt_ast_free(struct IF_STMT_AST*ast)
@@ -383,8 +407,6 @@ struct WHILE_STMT_AST*create_while_stmt_ast(struct LOGICAL_OR_EXPR_AST*condition
     while_stmt->body = body;
     return while_stmt;
 }
-
-static void dump_logical_or_expr_ast_to_file_inner(FILE*f, const struct LOGICAL_OR_EXPR_AST*ast, unsigned spaces_num);
 
 static void dump_while_stmt_ast_to_file_inner(FILE*f, const struct WHILE_STMT_AST*ast, unsigned spaces_num)
 {

@@ -1,10 +1,7 @@
 function fizz() {
-    let a = {
-        b : 0,
-        c : 0,
-    };
-    a.b = 5;
-    a.c = 10;
-    a.m = 220;
-    return a.b + a.c + a.m;
+    let a = 5;
+    if (a > 10) {
+        return -1;
+    }
+    return 1;
 }

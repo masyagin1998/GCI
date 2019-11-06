@@ -148,6 +148,9 @@ void virtual_machine_run(virtual_machine_type_t vm)
         case BC_OP_SET_LOCAL: {
             unsigned idx = READ_BYTE();
             vm->stack[idx] = *(vm->stack_top - 1);
+            if (idx != (vm->stack_top - vm->stack - 1)) {
+                virtual_machine_stack_pop(vm);
+            }
             break;
         }
         case BC_OP_GET_LOCAL: {
@@ -182,7 +185,7 @@ void virtual_machine_run(virtual_machine_type_t vm)
                             found = 1;
                             break;
                         } else if (i == len - 1) {
-                            val.obj_val->properties[j].val = *(vm->stack_top - 1);
+                            val.obj_val->properties[j].val = virtual_machine_stack_pop(vm);
                             found = 1;
                             break;                            
                         }
@@ -199,7 +202,7 @@ void virtual_machine_run(virtual_machine_type_t vm)
                         } else {
                             val.obj_val->properties_len++;
                             val.obj_val->properties[j].key = key;
-                            val.obj_val->properties[j].val = *(vm->stack_top - 1);
+                            val.obj_val->properties[j].val = virtual_machine_stack_pop(vm);
                         }
                     }
                 }
