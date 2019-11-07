@@ -69,6 +69,8 @@ statement = decl_statement |
             function_call_statement |
             if_statement |
             while_statement |
+            break_statement |
+            continue_statement |
             return_statement
 */
 
@@ -79,6 +81,8 @@ enum AST_STMT_TYPE
     AST_STMT_TYPE_FUNCTION_CALL,
     AST_STMT_TYPE_IF,
     AST_STMT_TYPE_WHILE,
+    AST_STMT_TYPE_BREAK,
+    AST_STMT_TYPE_CONTINUE,
     AST_STMT_TYPE_RETURN,
 };
 
@@ -91,6 +95,8 @@ struct STMT_AST
         struct FUNCTION_CALL_STMT_AST*function_call_stmt;
         struct IF_STMT_AST*if_stmt;
         struct WHILE_STMT_AST*while_stmt;
+        struct BREAK_STMT_AST*break_stmt;
+        struct CONTINUE_STMT_AST*continue_stmt;
         struct RETURN_STMT_AST*return_stmt;
     };
 
@@ -176,6 +182,26 @@ struct WHILE_STMT_AST*create_while_stmt_ast(struct LOGICAL_OR_EXPR_AST*condition
                                             struct BODY_AST*body);
 void dump_while_stmt_ast_to_file(FILE*f, const struct WHILE_STMT_AST*ast);
 void while_stmt_ast_free(struct WHILE_STMT_AST*ast);
+
+/*
+  break_statement = BREAK SEMI
+*/
+
+struct BREAK_STMT_AST {};
+
+struct BREAK_STMT_AST*create_break_stmt_ast();
+void dump_break_stmt_ast_to_file(FILE*f, const struct BREAK_STMT_AST*ast);
+void break_stmt_ast_free(struct BREAK_STMT_AST*ast);
+
+/*
+  continue_statement = CONTINUE SEMI
+*/
+
+struct CONTINUE_STMT_AST {};
+
+struct CONTINUE_STMT_AST*create_continue_stmt_ast();
+void dump_continue_stmt_ast_to_file(FILE*f, const struct CONTINUE_STMT_AST*ast);
+void continue_stmt_ast_free(struct CONTINUE_STMT_AST*ast);
 
 /*
 return_statement = RETURN assignment_expr SEMI |

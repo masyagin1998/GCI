@@ -10,6 +10,8 @@ const char let_keyword[]      = "let";
 const char if_keyword[]       = "if";
 const char else_keyword[]     = "else";
 const char while_keyword[]    = "while";
+const char break_keyword[]    = "break";
+const char continue_keyword[] = "continue";
 const char return_keyword[]   = "return";
 
 const unsigned function_keyword_len = sizeof(function_keyword) - 1;
@@ -17,6 +19,8 @@ const unsigned let_keyword_len      = sizeof(let_keyword) - 1;
 const unsigned if_keyword_len       = sizeof(if_keyword) - 1;
 const unsigned else_keyword_len     = sizeof(else_keyword) - 1;
 const unsigned while_keyword_len    = sizeof(while_keyword) - 1;
+const unsigned break_keyword_len    = sizeof(break_keyword) - 1;
+const unsigned continue_keyword_len = sizeof(continue_keyword) - 1;
 const unsigned return_keyword_len   = sizeof(return_keyword) - 1;
 
 struct LEXER
@@ -128,6 +132,22 @@ void lexer_next_token(lexer_type_t lexer, struct TOKEN**tok)
         case 'w': {
             if (pos_check_keyword(cur, while_keyword, while_keyword_len)) {
                 token_read_keyword(tok, cur, TOKEN_TYPE_WHILE, while_keyword, while_keyword_len);
+            } else {
+                goto eat_ident;
+            }
+            break;
+        }
+        case 'b': {
+            if (pos_check_keyword(cur, break_keyword, break_keyword_len)) {
+                token_read_keyword(tok, cur, TOKEN_TYPE_BREAK, break_keyword, break_keyword_len);
+            } else {
+                goto eat_ident;
+            }            
+            break;
+        }
+        case 'c': {
+            if (pos_check_keyword(cur, continue_keyword, continue_keyword_len)) {
+                token_read_keyword(tok, cur, TOKEN_TYPE_CONTINUE, continue_keyword, continue_keyword_len);
             } else {
                 goto eat_ident;
             }

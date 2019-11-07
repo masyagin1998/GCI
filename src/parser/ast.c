@@ -184,6 +184,12 @@ struct STMT_AST*create_stmt_ast(void*stmt_ptr, enum AST_STMT_TYPE stmt_type)
     case AST_STMT_TYPE_WHILE:
         stmt->while_stmt = stmt_ptr;
         break;
+    case AST_STMT_TYPE_BREAK:
+        stmt->break_stmt = stmt_ptr;
+        break;   
+    case AST_STMT_TYPE_CONTINUE:
+        stmt->continue_stmt = stmt_ptr;
+        break;
     case AST_STMT_TYPE_RETURN:
         stmt->return_stmt = stmt_ptr;
         break;
@@ -201,6 +207,8 @@ static void dump_assign_stmt_ast_to_file_inner(FILE*f, const struct ASSIGN_STMT_
 static void dump_function_call_stmt_ast_to_file_inner(FILE*f, const struct FUNCTION_CALL_STMT_AST*ast, unsigned spaces_num);
 static void dump_if_stmt_ast_to_file_inner(FILE*f, const struct IF_STMT_AST*ast, unsigned spaces_num);
 static void dump_while_stmt_ast_to_file_inner(FILE*f, const struct WHILE_STMT_AST*ast, unsigned spaces_num);
+static void dump_break_stmt_ast_to_file_inner(FILE*f, const struct BREAK_STMT_AST*ast, unsigned spaces_num);
+static void dump_continue_stmt_ast_to_file_inner(FILE*f, const struct CONTINUE_STMT_AST*ast, unsigned spaces_num);
 static void dump_return_stmt_ast_to_file_inner(FILE*f, const struct RETURN_STMT_AST*ast, unsigned spaces_num);
 
 static void dump_stmt_ast_to_file_inner(FILE*f, const struct STMT_AST*ast, unsigned spaces_num)
@@ -220,6 +228,12 @@ static void dump_stmt_ast_to_file_inner(FILE*f, const struct STMT_AST*ast, unsig
         break;
     case AST_STMT_TYPE_WHILE:
         dump_while_stmt_ast_to_file_inner(f, ast->while_stmt, spaces_num);
+        break;
+    case AST_STMT_TYPE_BREAK:
+        dump_break_stmt_ast_to_file_inner(f, ast->break_stmt, spaces_num);
+        break;
+    case AST_STMT_TYPE_CONTINUE:
+        dump_continue_stmt_ast_to_file_inner(f, ast->continue_stmt, spaces_num);
         break;
     case AST_STMT_TYPE_RETURN:
         dump_return_stmt_ast_to_file_inner(f, ast->return_stmt, spaces_num);
@@ -249,6 +263,12 @@ void stmt_ast_free(struct STMT_AST*ast)
     case AST_STMT_TYPE_WHILE:
         while_stmt_ast_free(ast->while_stmt);
         break;
+    case AST_STMT_TYPE_BREAK:
+        break_stmt_ast_free(ast->break_stmt);
+        break;
+    case AST_STMT_TYPE_CONTINUE:
+        continue_stmt_ast_free(ast->continue_stmt);
+        break;        
     case AST_STMT_TYPE_RETURN:
         return_stmt_ast_free(ast->return_stmt);
         break;
@@ -427,6 +447,40 @@ void while_stmt_ast_free(struct WHILE_STMT_AST*ast)
 {
     logical_or_expr_ast_free(ast->condition);
     body_ast_free(ast->body);
+    SAFE_FREE(ast);
+}
+
+struct BREAK_STMT_AST*create_break_stmt_ast() {
+    struct BREAK_STMT_AST*break_stmt;
+    SAFE_MALLOC(break_stmt, 1);
+    return break_stmt;
+}
+
+static void dump_break_stmt_ast_to_file_inner(FILE*f, const struct BREAK_STMT_AST*ast, unsigned spaces_num)
+{
+    PREFIX_UNUSED(ast);
+    PUT_SPACES(); fprintf(f, "<break></break>\n");
+}
+
+void break_stmt_ast_free(struct BREAK_STMT_AST*ast)
+{
+    SAFE_FREE(ast);
+}
+
+struct CONTINUE_STMT_AST*create_continue_stmt_ast() {
+    struct CONTINUE_STMT_AST*continue_stmt;
+    SAFE_MALLOC(continue_stmt, 1);
+    return continue_stmt;
+}
+
+static void dump_continue_stmt_ast_to_file_inner(FILE*f, const struct CONTINUE_STMT_AST*ast, unsigned spaces_num)
+{
+    PREFIX_UNUSED(ast);
+    PUT_SPACES(); fprintf(f, "<continue></continue>\n");
+}
+
+void continue_stmt_ast_free(struct CONTINUE_STMT_AST*ast)
+{
     SAFE_FREE(ast);
 }
 

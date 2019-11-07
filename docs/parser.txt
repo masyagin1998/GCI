@@ -12,6 +12,8 @@ statement               = decl_statement |
                           function_call_statement |
                           if_statement |
                           while_statement |
+                          break_statement |
+                          continue_statement |
                           return_statement
 
 decl_statement          = LET IDENT EQ assignment_expr SEMI
@@ -25,6 +27,10 @@ if_statement            = IF LPAREN logical_or_expr RPAREN body ELSE if_statemen
                           IF LPAREN logical_or_expr RPAREN body
 
 while_statement         = WHILE LPAREN logical_or_expr RPAREN body
+
+break_statement         = BREAK SEMI
+
+continue_statement      = CONTINUE SEMI
 
 return_statement        = RETURN assignment_expr SEMI |
                           RETURN SEMI

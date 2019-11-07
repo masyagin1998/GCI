@@ -336,6 +336,20 @@ void virtual_machine_run(virtual_machine_type_t vm)
             break;
         }
 
+        case BC_OP_JUMP_IF_FALSE: {
+            int offset = (int) READ_BYTE();
+            struct VALUE val = *(vm->stack_top - 1);
+            if (!val.int_val) {
+                vm->ip += offset;
+            }
+            break;
+        }
+        case BC_OP_JUMP: {
+            int offset = (int) READ_BYTE();
+            vm->ip += offset;
+            break;
+        }
+
         case BC_OP_RETURN: {
             struct VALUE val = virtual_machine_stack_pop(vm);
             printf("result: %lld\n", val.int_val);

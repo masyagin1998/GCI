@@ -3,6 +3,8 @@ LET      = let
 IF       = if
 ELSE     = else
 WHILE    = while
+BREAK    = break
+CONTINUE = continue
 RETURN   = return
 
 IDENT    = [a-z]([a-z]|[0-9])*

@@ -50,6 +50,8 @@ enum TOKEN_TYPE
     TOKEN_TYPE_IF,       /* if                  */
     TOKEN_TYPE_ELSE,     /* else                */
     TOKEN_TYPE_WHILE,    /* while               */
+    TOKEN_TYPE_BREAK,    /* break               */
+    TOKEN_TYPE_CONTINUE, /* continue            */
     TOKEN_TYPE_RETURN,   /* return              */
 
     TOKEN_TYPE_IDENT,    /* [a-z]([a-z]|[0-9])* */

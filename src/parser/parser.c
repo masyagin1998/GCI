@@ -695,11 +695,6 @@ static enum PARSER_CODES decl_stmt_ast_read(struct PARSER*parser, struct DECL_ST
 }
 
 /*
-static enum PARSER_CODES assign_stmt_ast_read(struct ASSIGN_STMT_AST**assign_stmt, lexer_type_t lexer, struct TOKEN*parser->tok)
-{
-    
-}
-
 static enum PARSER_CODES function_call_stmt_ast_read(struct FUNCTION_CALL_STMT_AST**function_call_stmt, lexer_type_t lexer, struct TOKEN*parser->tok)
 {
     
@@ -825,6 +820,44 @@ static enum PARSER_CODES while_stmt_ast_read(struct PARSER*parser, struct WHILE_
  err0:
     (*while_stmt) = NULL;
     return r;
+}
+
+static enum PARSER_CODES break_stmt_ast_read(struct PARSER*parser, struct BREAK_STMT_AST**break_stmt)
+{
+    if ((parser->tok)->token_type != TOKEN_TYPE_BREAK) {
+        
+    }
+    token_free((parser->tok));
+    lexer_next_token(parser->lexer, &(parser->tok));
+
+    if ((parser->tok)->token_type != TOKEN_TYPE_SEMI) {
+        
+    }
+    token_free((parser->tok));
+    lexer_next_token(parser->lexer, &(parser->tok));
+
+    (*break_stmt) = create_break_stmt_ast();
+
+    return PARSER_OK;
+}
+
+static enum PARSER_CODES continue_stmt_ast_read(struct PARSER*parser, struct CONTINUE_STMT_AST**continue_stmt)
+{
+    if ((parser->tok)->token_type != TOKEN_TYPE_CONTINUE) {
+        
+    }
+    token_free((parser->tok));
+    lexer_next_token(parser->lexer, &(parser->tok));
+
+    if ((parser->tok)->token_type != TOKEN_TYPE_SEMI) {
+        
+    }
+    token_free((parser->tok));
+    lexer_next_token(parser->lexer, &(parser->tok));
+
+    (*continue_stmt) = create_continue_stmt_ast();
+
+    return PARSER_OK;
 }
 
 static enum PARSER_CODES return_stmt_ast_read(struct PARSER*parser, struct RETURN_STMT_AST**return_stmt)
@@ -958,6 +991,24 @@ static enum PARSER_CODES stmt_ast_read(struct PARSER*parser, struct STMT_AST**st
             goto err0;
         }
         (*stmt) = create_stmt_ast(while_stmt, AST_STMT_TYPE_WHILE);
+        break;
+    }
+    case TOKEN_TYPE_BREAK: {
+        struct BREAK_STMT_AST*break_stmt;
+        r = break_stmt_ast_read(parser, &break_stmt);
+        if (r != PARSER_OK) {
+            
+        }
+        (*stmt) = create_stmt_ast(break_stmt, AST_STMT_TYPE_BREAK);
+        break;
+    }
+    case TOKEN_TYPE_CONTINUE: {
+        struct CONTINUE_STMT_AST*continue_stmt;
+        r = continue_stmt_ast_read(parser, &continue_stmt);
+        if (r != PARSER_OK) {
+            
+        }
+        (*stmt) = create_stmt_ast(continue_stmt, AST_STMT_TYPE_CONTINUE);        
         break;
     }
     case TOKEN_TYPE_RETURN: {

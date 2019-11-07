@@ -422,9 +422,10 @@ enum BYTECODE_GENERATOR_CODES function_call_stmt_ast_bytecode_generate(bytecode_
     return BYTECODE_GENERATOR_OK;
 }
 
-static enum BYTECODE_GENERATOR_CODES body_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct BODY_AST*ast);
+static enum BYTECODE_GENERATOR_CODES body_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct BODY_AST*ast, int*loop_start_idxs,
+                                                                int**loop_exit_idxs, unsigned*loop_exit_idxs_len, unsigned*loop_exit_idxs_cap);
 
-static unsigned emit_jump(bytecode_generator_type_t bc_gen, unsigned instruction)
+static int emit_jump(bytecode_generator_type_t bc_gen, unsigned instruction)
 {
     PUSH_BACK(bc_gen->bc->op_codes, instruction);
     PUSH_BACK(bc_gen->bc->op_codes, 0x0); // empty instruction.
@@ -434,30 +435,113 @@ static unsigned emit_jump(bytecode_generator_type_t bc_gen, unsigned instruction
 
 static void patch_jump(bytecode_generator_type_t bc_gen, unsigned offset)
 {
-    unsigned jump = bc_gen->bc->op_codes_len - 1;
+    int jump = bc_gen->bc->op_codes_len - offset - 1;
 
     bc_gen->bc->op_codes[offset] = jump;
 }
 
-static enum BYTECODE_GENERATOR_CODES if_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct IF_STMT_AST*ast)
+static enum BYTECODE_GENERATOR_CODES if_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct IF_STMT_AST*ast, int*loop_start_idx,
+                                                                   int**loop_exit_idxs, unsigned*loop_exit_idxs_len, unsigned*loop_exit_idxs_cap)
 {
-    int idx;
+    int if_idx;
+    int else_idx;
     
     logical_or_expr_ast_bytecode_generate(bc_gen, ast->condition);
 
-    idx = emit_jump(bc_gen, BC_OP_JUMP_IF_FALSE);
+    if_idx = emit_jump(bc_gen, BC_OP_JUMP_IF_FALSE);
+    PUSH_BACK(bc_gen->bc->op_codes, BC_OP_POP);
 
-    body_ast_bytecode_generate(bc_gen, ast->if_body);
+    body_ast_bytecode_generate(bc_gen, ast->if_body, loop_start_idx,
+                               loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
 
-    patch_jump(bc_gen, idx);
+    else_idx = emit_jump(bc_gen, BC_OP_JUMP);
+
+    patch_jump(bc_gen, if_idx);
+    PUSH_BACK(bc_gen->bc->op_codes, BC_OP_POP);
+
+    if (ast->else_body != NULL) {
+        body_ast_bytecode_generate(bc_gen, ast->else_body, loop_start_idx,
+                                   loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
+    }
+
+    patch_jump(bc_gen, else_idx);
     
     return BYTECODE_GENERATOR_OK;
 }
 
+static void emit_loop(bytecode_generator_type_t bc_gen, unsigned loop_start)
+{
+    int offset;
+    
+    PUSH_BACK(bc_gen->bc->op_codes, BC_OP_JUMP);
+
+    offset = ((int) (bc_gen->bc->op_codes_len - loop_start + 1)) * (-1);
+    
+    PUSH_BACK(bc_gen->bc->op_codes, offset);
+}
+
 static enum BYTECODE_GENERATOR_CODES while_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct WHILE_STMT_AST*ast)
 {
-    /* TODO */
+    unsigned i;
     
+    int loop_start_idx;
+    
+    int*loop_exit_idxs = NULL;
+    unsigned loop_exit_idxs_len = 0;
+    unsigned loop_exit_idxs_cap = 0;        
+
+    loop_start_idx = bc_gen->bc->op_codes_len;
+    
+    logical_or_expr_ast_bytecode_generate(bc_gen, ast->condition);
+
+    PUSH_BACK(loop_exit_idxs, emit_jump(bc_gen, BC_OP_JUMP_IF_FALSE));
+    PUSH_BACK(bc_gen->bc->op_codes, BC_OP_POP);
+
+    body_ast_bytecode_generate(bc_gen, ast->body, &loop_start_idx,
+                               &loop_exit_idxs, &loop_exit_idxs_len, &loop_exit_idxs_cap);
+
+    emit_loop(bc_gen, loop_start_idx);
+
+    patch_jump(bc_gen, loop_exit_idxs[0]);
+    PUSH_BACK(bc_gen->bc->op_codes, BC_OP_POP);
+    
+    for (i = 1; i < loop_exit_idxs_len; i++) {
+        patch_jump(bc_gen, loop_exit_idxs[i]);
+    }
+
+    free(loop_exit_idxs);
+    
+    return BYTECODE_GENERATOR_OK;
+}
+
+static enum BYTECODE_GENERATOR_CODES break_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct BREAK_STMT_AST*ast,
+                                                                      int**loop_exit_idxs, unsigned*loop_exit_idxs_len, unsigned*loop_exit_idxs_cap)
+{
+    int loop_exit_idx;
+    
+    PREFIX_UNUSED(ast);
+
+    if (loop_exit_idxs == NULL) {
+        
+    }
+
+    loop_exit_idx = emit_jump(bc_gen, BC_OP_JUMP);
+
+    PUSH_BACK(*loop_exit_idxs, loop_exit_idx);
+
+    return BYTECODE_GENERATOR_OK;
+}
+
+static enum BYTECODE_GENERATOR_CODES continue_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct CONTINUE_STMT_AST*ast, int*loop_start_idx)
+{
+    PREFIX_UNUSED(ast);
+
+    if (loop_start_idx == NULL) {
+        
+    }
+
+    emit_loop(bc_gen, (*loop_start_idx));
+
     return BYTECODE_GENERATOR_OK;
 }
 
@@ -472,7 +556,8 @@ static enum BYTECODE_GENERATOR_CODES return_stmt_ast_bytecode_generate(bytecode_
     return BYTECODE_GENERATOR_OK;    
 }
 
-static enum BYTECODE_GENERATOR_CODES stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct STMT_AST*ast)
+static enum BYTECODE_GENERATOR_CODES stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct STMT_AST*ast, int*loop_start_idx,
+                                                                int**loop_exit_idxs, unsigned*loop_exit_idxs_len, unsigned*loop_exit_idxs_cap)
 {
     switch (ast->type) {
     case AST_STMT_TYPE_DECL:
@@ -485,10 +570,17 @@ static enum BYTECODE_GENERATOR_CODES stmt_ast_bytecode_generate(bytecode_generat
         function_call_stmt_ast_bytecode_generate(bc_gen, ast->function_call_stmt);
         break;
     case AST_STMT_TYPE_IF:
-        if_stmt_ast_bytecode_generate(bc_gen, ast->if_stmt);
+        if_stmt_ast_bytecode_generate(bc_gen, ast->if_stmt, loop_start_idx,
+                                      loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
         break;
     case AST_STMT_TYPE_WHILE:
         while_stmt_ast_bytecode_generate(bc_gen, ast->while_stmt);
+        break;
+    case AST_STMT_TYPE_BREAK:
+        break_stmt_ast_bytecode_generate(bc_gen, ast->break_stmt, loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
+        break;
+    case AST_STMT_TYPE_CONTINUE:
+        continue_stmt_ast_bytecode_generate(bc_gen, ast->continue_stmt, loop_start_idx);
         break;
     case AST_STMT_TYPE_RETURN:
         return_stmt_ast_bytecode_generate(bc_gen, ast->return_stmt);
@@ -502,14 +594,16 @@ static enum BYTECODE_GENERATOR_CODES stmt_ast_bytecode_generate(bytecode_generat
     return BYTECODE_GENERATOR_OK;    
 }
 
-static enum BYTECODE_GENERATOR_CODES body_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct BODY_AST*ast)
+static enum BYTECODE_GENERATOR_CODES body_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct BODY_AST*ast, int*loop_start_idx,
+                                                                int**loop_exit_idxs, unsigned*loop_exit_idxs_len, unsigned*loop_exit_idxs_cap)
 {
     unsigned i;
 
     bc_gen->scope_depth++;
 
     for (i = 0; i < ast->stmts_len; i++) {
-        stmt_ast_bytecode_generate(bc_gen, ast->stmts[i]);
+        stmt_ast_bytecode_generate(bc_gen, ast->stmts[i], loop_start_idx,
+                                   loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
     }
 
     bc_gen->scope_depth--;
@@ -528,7 +622,8 @@ enum BYTECODE_GENERATOR_CODES bytecode_generator_generate(bytecode_generator_typ
 {   
     /* now only one function without arguments is supported. */
     struct FUNCTION_DECL_AST*f = bc_gen->ast->functions[0];
-    body_ast_bytecode_generate(bc_gen, f->body);
+    body_ast_bytecode_generate(bc_gen, f->body, NULL,
+                               NULL, NULL, NULL);
 
     (*bc) = bc_gen->bc;
 
@@ -582,35 +677,35 @@ void dump_bytecode_to_xml_file(FILE*f, const bytecode_type_t bc)
         
         switch (bc->op_codes[i]) {
         case BC_OP_POP:
-            fprintf(f, "\t\t<op idx=\"%u\">POP<op>\n", i);
+            fprintf(f, "\t\t<op>POP<op>\n");
             break;
 
         case BC_OP_CONSTANT:
             i++;
-            fprintf(f, "\t\t<op idx=\"%u\">CONSTANT %u</op>\n", i - 1, bc->op_codes[i]);
+            fprintf(f, "\t\t<op>CONSTANT %u</op>\n", bc->op_codes[i]);
             break;
 
         case BC_OP_GET_LOCAL:
             i++;
-            fprintf(f, "\t\t<op idx=\"%u\">GET_LOCAL %u</op>\n", i - 1, bc->op_codes[i]);
+            fprintf(f, "\t\t<op>GET_LOCAL %u</op>\n", bc->op_codes[i]);
             break;
         case BC_OP_SET_LOCAL:
             i++;
-            fprintf(f, "\t\t<op idx=\"%u\">SET_LOCAL %u</op>\n", i - 1, bc->op_codes[i]);
+            fprintf(f, "\t\t<op>SET_LOCAL %u</op>\n", bc->op_codes[i]);
             break;
 
         case BC_OP_CREATE_OBJ:
             i++;
-            fprintf(f, "\t\t<op idx=\"%u\">CREATE_OBJ %u</op>\n", i - 1, bc->op_codes[i]);
+            fprintf(f, "\t\t<op>CREATE_OBJ %u</op>\n", bc->op_codes[i]);
             break;
         case BC_OP_INIT_OBJ_PROP:
             i++;
-            fprintf(f, "\t\t<op idx=\"%u\">INIT_OBJ_PROP %u</op>\n", i - 1, bc->op_codes[i]);            
+            fprintf(f, "\t\t<op>INIT_OBJ_PROP %u</op>\n", bc->op_codes[i]);
             break;
 
         case BC_OP_GET_HEAP:
             i++;
-            fprintf(f, "\t\t<op idx=\"%u\">GET_HEAP %u", i - 1, bc->op_codes[i]);
+            fprintf(f, "\t\t<op>GET_HEAP %u", bc->op_codes[i]);
             i++;
             n = bc->op_codes[i];
             i++;
@@ -623,7 +718,7 @@ void dump_bytecode_to_xml_file(FILE*f, const bytecode_type_t bc)
             break;
         case BC_OP_SET_HEAP:
             i++;            
-            fprintf(f, "\t\t<op idx=\"%u\">SET_HEAP %u", i - 1, bc->op_codes[i]);
+            fprintf(f, "\t\t<op>SET_HEAP %u", bc->op_codes[i]);
             i++;
             n = bc->op_codes[i];
             i++;
@@ -636,47 +731,64 @@ void dump_bytecode_to_xml_file(FILE*f, const bytecode_type_t bc)
             break;
 
         case BC_OP_LOGICAL_OR:
-            fprintf(f, "\t\t<op idx=\"%u\">LOGICAL_OR</op>\n", i);
+            fprintf(f, "\t\t<op>LOGICAL_OR</op>\n");
             break;
         case BC_OP_LOGICAL_AND:
-            fprintf(f, "\t\t<op idx=\"%u\">LOGICAL_AND</op>\n", i);
+            fprintf(f, "\t\t<op>LOGICAL_AND</op>\n");
             break;
 
         case BC_OP_EQ_EQEQ:
-            fprintf(f, "\t\t<op idx=\"%u\">EQ_EQEQ</op>\n", i);
+            fprintf(f, "\t\t<op>EQ_EQEQ</op>\n");
             break;
         case BC_OP_EQ_NEQ:
-            fprintf(f, "\t\t<op idx=\"%u\">EQ_NEQ</op>\n", i);
+            fprintf(f, "\t\t<op>EQ_NEQ</op>\n");
+            break;
+
+        case BC_OP_REL_LT:
+            fprintf(f, "\t\t<op>REL_LT</op>\n");            
+            break;
+        case BC_OP_REL_GT:
+            fprintf(f, "\t\t<op>REL_GT</op>\n");            
+            break;
+        case BC_OP_REL_LE:
+            fprintf(f, "\t\t<op>REL_LE</op>\n");            
+            break;
+        case BC_OP_REL_GE:
+            fprintf(f, "\t\t<op>REL_GE</op>\n");            
             break;
 
         case BC_OP_ADDITIVE_PLUS:
-            fprintf(f, "\t\t<op idx=\"%u\">ADDITIVE_PLUS</op>\n", i);
+            fprintf(f, "\t\t<op>ADDITIVE_PLUS</op>\n");
             break;
         case BC_OP_ADDITIVE_MINUS:
-            fprintf(f, "\t\t<op idx=\"%u\">ADDITIVE_MINUS</op>\n", i);
+            fprintf(f, "\t\t<op>ADDITIVE_MINUS</op>\n");
             break;
 
         case BC_OP_MULTIPLICATIVE_MUL:
-            fprintf(f, "\t\t<op idx=\"%u\">MULTIPLICATIVE_MUL</op>\n", i);
+            fprintf(f, "\t\t<op>MULTIPLICATIVE_MUL</op>\n");
             break;
         case BC_OP_MULTIPLICATIVE_DIV:
-            fprintf(f, "\t\t<op idx=\"%u\">MULTIPLICATIVE_DIV</op>\n", i);
+            fprintf(f, "\t\t<op>MULTIPLICATIVE_DIV</op>\n");
             break;
         case BC_OP_MULTIPLICATIVE_MOD:
-            fprintf(f, "\t\t<op idx=\"%u\">MULTIPLICATIVE_MOD</op>\n", i);
+            fprintf(f, "\t\t<op>MULTIPLICATIVE_MOD</op>\n");
             break;
 
         case BC_OP_NEGATE:
-            fprintf(f, "\t\t<op idx=\"%u\">NEGATE</op>\n", i);
+            fprintf(f, "\t\t<op>NEGATE</op>\n");
             break;
 
         case BC_OP_JUMP_IF_FALSE:
+            i++;
+            fprintf(f, "\t\t<op>JUMP_IF_FALSE %d</op>\n", (int) bc->op_codes[i]);
             break;
         case BC_OP_JUMP:
+            i++;
+            fprintf(f, "\t\t<op>JUMP %d</op>\n", (int) bc->op_codes[i]);
             break;
 
         case BC_OP_RETURN:
-            fprintf(f, "\t\t<op idx=\"%u\">RETURN</op>\n", i);
+            fprintf(f, "\t\t<op>RETURN</op>\n");
             break;
         }
 
