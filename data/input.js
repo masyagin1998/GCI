@@ -1,16 +1,31 @@
-function fibonacci(){
-    let i = 0;
-    let a = 1;
+function test(){
+    let obj = {
+    };
 
-    while (i < 10) {
-        if (i % 2 == 0) {
-            i = i + 1;
-            continue;
-        }
+    let obj1 = {
+        a : obj,
+    };
 
-        i = i + 1;
-        a = a * 2;
-    }
+    obj.a = 1;
+    obj.b = 2;
+    obj.c = 3;
+    obj.d = 4;
 
-    return a;
+    let obj2 = {
+        a : obj,
+    };
+    
+    obj.e = 5;
+    obj.f = 6;
+    obj.g = 7;
+    obj.h = 8;
+    obj.i = 9;
+    obj.j = 10;
+    obj.k = 11;
+    obj.l = 12;
+    obj.m = 13;
+    obj.n = 14;
+    obj.o = 15;
+
+    return obj1.a.a + obj1.a.g + obj1.a.o;
 }

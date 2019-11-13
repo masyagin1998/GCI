@@ -1,27 +1,10 @@
 #include "virtual-machine.h"
 
-#include "allocator.h"
+#include "data-types.h"
 
-enum VALUE_TYPE
-{
-    VALUE_TYPE_INTEGER,
-    VALUE_TYPE_DOUBLE,
-    VALUE_TYPE_OBJ,
-};
+#include "garbage-collector.h"
 
-struct VALUE
-{
-    unsigned mark;
-    
-    union
-    {
-        long long int_val;
-        double double_val;
-        struct OBJECT*obj_val;
-    };
-
-    enum VALUE_TYPE type;
-};
+#include "utils.h"
 
 static struct VALUE create_value_from_int(long long int_val)
 {
@@ -30,7 +13,8 @@ static struct VALUE create_value_from_int(long long int_val)
     val.int_val = int_val;
     return val;
 }
-    
+
+/*
 static struct VALUE create_value_from_double(double double_val)
 {
     struct VALUE val;
@@ -38,6 +22,7 @@ static struct VALUE create_value_from_double(double double_val)
     val.double_val = double_val;
     return val;    
 }
+*/
 
 static struct VALUE create_value_from_obj(struct OBJECT*obj_val)
 {
@@ -56,7 +41,7 @@ struct VIRTUAL_MACHINE
     struct VALUE*stack_top;
     unsigned stack_cap;
 
-    allocator_type_t allocator;
+    garbage_collector_type_t gc;
 };
 
 virtual_machine_type_t create_virtual_machine()
@@ -66,7 +51,7 @@ virtual_machine_type_t create_virtual_machine()
     return vm;
 }
 
-void virtual_machine_conf(virtual_machine_type_t vm, bytecode_type_t bc, unsigned stack_size, unsigned heap_size_b)
+void virtual_machine_conf(virtual_machine_type_t vm, bytecode_type_t bc, unsigned stack_size, unsigned start_heap_size_b)
 {
     vm->bc = bc;
     vm->ip = bc->op_codes;
@@ -75,8 +60,8 @@ void virtual_machine_conf(virtual_machine_type_t vm, bytecode_type_t bc, unsigne
     SAFE_MALLOC(vm->stack, vm->stack_cap);
     vm->stack_top = vm->stack;
 
-    vm->allocator = create_allocator();
-    allocator_conf(vm->allocator, heap_size_b);
+    vm->gc = create_garbage_collector();
+    garbage_collector_conf(vm->gc, start_heap_size_b, &(vm->stack), &(vm->stack_top));
 }
 
 static void virtual_machine_stack_push(virtual_machine_type_t vm, struct VALUE val)
@@ -93,26 +78,13 @@ static struct VALUE virtual_machine_stack_pop(virtual_machine_type_t vm)
 
 #define READ_BYTE() (*(vm->ip++))
 
-struct PROPERTY
-{
-    unsigned long long key;
-    struct VALUE val;
-};
-
-struct OBJECT
-{
-    unsigned properties_len;
-    unsigned properties_cap;
-    struct PROPERTY properties[];
-};
-
 struct OBJECT*create_obj(virtual_machine_type_t vm)
 {
     unsigned i;
 
     unsigned properties_num = READ_BYTE();
     
-    struct OBJECT*obj = allocator_malloc_mem(vm->allocator, sizeof(struct OBJECT) + sizeof(struct PROPERTY) * properties_num * 2);
+    struct OBJECT*obj = garbage_collector_malloc_obj(vm->gc, properties_num);
     
     for (i = 0; i < properties_num; i++) {
         struct VALUE key = virtual_machine_stack_pop(vm);
@@ -197,8 +169,10 @@ void virtual_machine_run(virtual_machine_type_t vm)
                         exit(1);
                     } else {
                         if (val.obj_val->properties_len == val.obj_val->properties_cap) {
-                            printf("TODO: %d %d\n", val.obj_val->properties_len, val.obj_val->properties_cap);
-                            exit(1);
+                            val.obj_val = garbage_collector_realloc_obj(vm->gc, val.obj_val, val.obj_val->properties_len + 1);
+                            val.obj_val->properties_len++;
+                            val.obj_val->properties[j].key = key;
+                            val.obj_val->properties[j].val = virtual_machine_stack_pop(vm);
                         } else {
                             val.obj_val->properties_len++;
                             val.obj_val->properties[j].key = key;
@@ -363,6 +337,6 @@ void virtual_machine_run(virtual_machine_type_t vm)
 void virtual_machine_free(virtual_machine_type_t vm)
 {
     SAFE_FREE(vm->stack);
-    allocator_free(vm->allocator);
+    free_garbage_collector(vm->gc);
     SAFE_FREE(vm);
 }
