@@ -1,13 +1,22 @@
-function test(){
-    let obj = {};
-    obj.a = 1;
-    obj.b = 1;
-    obj.c = 1;
-    obj.d = 1;
+function test() {
+    if (1) {
+        let obj1 = {
+            
+        };
+        let obj2 = {
+            
+        };        
+        let obj3 = {
+            
+        };
+        let obj4 = {
+            
+        };
+    }
 
-    let obj1 = {};
+    let obj5 = {
+        a : 1,
+    };
 
-    obj1.a = 1;
-
-    return 0;
+    return obj5.a;
 }

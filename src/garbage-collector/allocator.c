@@ -38,7 +38,7 @@ void allocator_clean_pool(allocator_type_t a)
     a->free_list.first = a->mem;
     a->free_list.last = a->mem;
     a->free_list.count = 1;
-    a->busy_list.sizemem = a->sizemem;
+    a->free_list.sizemem = a->sizemem - BLOCK_OVERHEAD;
 
     a->busy_list.first = NULL;
     a->busy_list.last = NULL;
@@ -101,7 +101,7 @@ static void allocator_list_push_front(struct ALLOCATOR_LIST*list, void*elem)
     }
 
     list->count++;
-    list->sizemem += BLOCK_L_DATA_LEN(elem);    
+    list->sizemem += BLOCK_L_DATA_LEN(elem);
 }
 
 static void allocator_list_push_back(struct ALLOCATOR_LIST*list, void*elem)
@@ -167,6 +167,9 @@ void*allocator_malloc_block(allocator_type_t a, size_t sizemem)
         BLOCK_L_FLAG(cur) = BUSY_BLOCK;
         BLOCK_R_FLAG(cur) = BUSY_BLOCK;
         allocator_list_push_back(&(a->busy_list), cur);
+
+        printf("busy: %lu, free: %lu, free mem: %lu\n",  a->busy_list.count, a->free_list.count, a->free_list.sizemem);
+        
         return BLOCK_DATA(cur);
     }
 
@@ -194,6 +197,8 @@ void*allocator_malloc_block(allocator_type_t a, size_t sizemem)
     BLOCK_R_DATA_LEN(tmp_block) = len;
     BLOCK_R_FLAG(tmp_block) = FREE_BLOCK;
     allocator_list_insert_elem(&(a->free_list), tmp_block);
+
+    printf("busy: %lu, free: %lu, free mem: %lu\n",  a->busy_list.count, a->free_list.count, a->free_list.sizemem);
     
     return BLOCK_DATA(cur);
 }
