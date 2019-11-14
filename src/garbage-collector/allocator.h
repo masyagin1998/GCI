@@ -14,7 +14,9 @@
   so every block has 34 bytes size overhead.
 */
 
-#define BLOCK_OVERHEAD (2 * (sizeof(char) + sizeof(size_t) + sizeof(void*)))
+#define BLOCK_L_OVERHEAD (sizeof(char) + sizeof(size_t) + 2 * sizeof(void*))
+#define BLOCK_R_OVERHEAD (sizeof(size_t) + sizeof(char))
+#define BLOCK_OVERHEAD (BLOCK_L_OVERHEAD + BLOCK_R_OVERHEAD)
 #define MIN_BLOCK_LEN (BLOCK_OVERHEAD + sizeof(char))
 
 /*      -position-                 -type-          -l flag-         -l len-        -list prev-      -list next-      -data-                              -r len-                          -r flag-         -arr next-   */
@@ -47,6 +49,7 @@ struct ALLOCATOR_LIST
 {
     void*first, *last;
     size_t count;
+    size_t sizemem;
 };
 
 struct ALLOCATOR
@@ -55,10 +58,10 @@ struct ALLOCATOR
     size_t sizemem;
 
     /* free blocks. */
-    struct ALLOCATOR_LIST free_lst;
+    struct ALLOCATOR_LIST free_list;
 
     /* busy blocks. */
-    struct ALLOCATOR_LIST busy_lst;
+    struct ALLOCATOR_LIST busy_list;
 };
 
 typedef struct ALLOCATOR* allocator_type_t;

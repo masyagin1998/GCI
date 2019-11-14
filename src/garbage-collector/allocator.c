@@ -27,10 +27,15 @@ void allocator_malloc_pool(allocator_type_t a, size_t sizemem)
     BLOCK_R_DATA_LEN(a->mem) = len;
     BLOCK_R_FLAG(a->mem) = FREE_BLOCK;
 
-    a->free_lst.first = a->mem;
-    a->free_lst.last = a->mem;
+    a->free_list.first = a->mem;
+    a->free_list.last = a->mem;
+    a->free_list.count = 1;
+    a->busy_list.sizemem = a->sizemem;
 
-
+    a->busy_list.first = NULL;
+    a->busy_list.last = NULL;
+    a->busy_list.count = 0;
+    a->busy_list.sizemem = 0;
 }
 
 void allocator_realloc_pool(allocator_type_t a, size_t sizemem)
@@ -43,32 +48,33 @@ void allocator_free_pool(allocator_type_t a)
     SAFE_FREE(a->mem);
 }
 
-static void allocator_list_remove_elem(struct ALLOCATOR_LIST*lst, void*elem)
+static void allocator_list_remove_elem(struct ALLOCATOR_LIST*list, void*elem)
 {
-    void*prev = BLOCK_LIST_PREV(elem);
-    void*next = BLOCK_LIST_NEXT(elem);
+    void*list_prev = BLOCK_LIST_PREV(elem);
+    void*list_next = BLOCK_LIST_NEXT(elem);
 
-    if (prev != NULL) {
-        BLOCK_LIST_NEXT(prev) = next;
+    if (list_prev != NULL) {
+        BLOCK_LIST_NEXT(list_prev) = list_next;
     }
-    if (next != NULL) {
-        BLOCK_LIST_PREV(next) = prev;
+    if (list_next != NULL) {
+        BLOCK_LIST_PREV(list_next) = list_prev;
     }
 
-    if (prev == NULL) {
-        lst->first = next;
+    if (list_prev == NULL) {
+        list->first = list_next;
             
     }
-    if (next == NULL) {
-        lst->last = prev;
+    if (list_next == NULL) {
+        list->last = list_prev;
     }
 
-    lst->count--;
+    list->count--;
+    list->sizemem -= BLOCK_L_DATA_LEN(elem);
 }
 
-static void*allocator_list_search_by_sizemem(struct ALLOCATOR_LIST*lst, size_t sizemem)
+static void*allocator_list_search_by_sizemem(struct ALLOCATOR_LIST*list, size_t sizemem)
 {
-    void*cur = lst->first;
+    void*cur = list->first;
 
     while (cur != NULL) {
         if (BLOCK_L_DATA_LEN(cur) >= sizemem) {
@@ -81,64 +87,67 @@ static void*allocator_list_search_by_sizemem(struct ALLOCATOR_LIST*lst, size_t s
     return NULL;
 }
 
-static void allocator_list_push_front(struct ALLOCATOR_LIST*lst, void*elem)
+static void allocator_list_push_front(struct ALLOCATOR_LIST*list, void*elem)
 {
-    BLOCK_LIST_NEXT(elem) = lst->first;
+    BLOCK_LIST_NEXT(elem) = list->first;
     BLOCK_LIST_PREV(elem) = NULL;
 
-    if (lst->first != NULL) {
-        BLOCK_LIST_PREV(lst->first) = elem;
+    if (list->first != NULL) {
+        BLOCK_LIST_PREV(list->first) = elem;
     }
     
-    lst->first = elem;
+    list->first = elem;
 
-    if (lst->last == NULL) {
-        lst->last = elem;
+    if (list->last == NULL) {
+        list->last = elem;
     }
 
-    lst->count++;    
+    list->count++;
+    list->sizemem += BLOCK_L_DATA_LEN(elem);    
 }
 
-static void allocator_list_push_back(struct ALLOCATOR_LIST*lst, void*elem)
+static void allocator_list_push_back(struct ALLOCATOR_LIST*list, void*elem)
 {
     BLOCK_LIST_NEXT(elem) = NULL;
-    BLOCK_LIST_PREV(elem) = lst->last;
+    BLOCK_LIST_PREV(elem) = list->last;
     
-    if (lst->last != NULL) {
-        BLOCK_LIST_NEXT(lst->last) = elem;
+    if (list->last != NULL) {
+        BLOCK_LIST_NEXT(list->last) = elem;
     }
     
-    lst->last = elem;
+    list->last = elem;
     
-    if (lst->first == NULL) {
-        lst->first = elem;
+    if (list->first == NULL) {
+        list->first = elem;
     }
 
-    lst->count++;
+    list->count++;
+    list->sizemem += BLOCK_L_DATA_LEN(elem);
 }
 
-static void allocator_list_insert_elem(struct ALLOCATOR_LIST*lst, void*elem)
+static void allocator_list_insert_elem(struct ALLOCATOR_LIST*list, void*elem)
 {
     size_t len = BLOCK_L_DATA_LEN(elem);
-    void*next_elem = allocator_list_search_by_sizemem(lst, len);
+    void*list_next = allocator_list_search_by_sizemem(list, len);
 
-    if (next_elem == NULL) {
-        allocator_list_push_back(lst, elem);
+    if (list_next == NULL) {
+        allocator_list_push_back(list, elem);
     } else {
         void*prev_elem;
         
-        if (BLOCK_LIST_PREV(next_elem) == NULL) {
-            allocator_list_push_front(lst, elem);
+        if (BLOCK_LIST_PREV(list_next) == NULL) {
+            allocator_list_push_front(list, elem);
             return;
         }
 
-        BLOCK_LIST_PREV(elem) = BLOCK_LIST_PREV(next_elem);
-        prev_elem = BLOCK_LIST_PREV(next_elem);
+        BLOCK_LIST_PREV(elem) = BLOCK_LIST_PREV(list_next);
+        prev_elem = BLOCK_LIST_PREV(list_next);
         BLOCK_LIST_NEXT(prev_elem) = elem;
-        BLOCK_LIST_NEXT(elem) = next_elem;
-        BLOCK_LIST_PREV(next_elem) = elem;
+        BLOCK_LIST_NEXT(elem) = list_next;
+        BLOCK_LIST_PREV(list_next) = elem;
 
-        lst->count++;
+        list->count++;
+        list->sizemem += BLOCK_L_DATA_LEN(elem);
     }
 }
 
@@ -146,20 +155,20 @@ void*allocator_malloc_block(allocator_type_t a, size_t sizemem)
 {
     void*cur;
 
-    if ((BLOCK_L_DATA_LEN(a->free_lst.last) + BLOCK_OVERHEAD) < sizemem) {
+    if ((BLOCK_L_DATA_LEN(a->free_list.last) + BLOCK_OVERHEAD) < sizemem) {
         return NULL;
     }
 
-    cur = allocator_list_search_by_sizemem(&(a->free_lst), sizemem);
+    cur = allocator_list_search_by_sizemem(&(a->free_list), sizemem);
 
     /* remove block from list. */
-    allocator_list_remove_elem(&(a->free_lst), cur);
+    allocator_list_remove_elem(&(a->free_list), cur);
     
     if (BLOCK_L_DATA_LEN(cur) < (sizemem + MIN_BLOCK_LEN)) {
         /* don't need to divide block. */
         BLOCK_L_FLAG(cur) = BUSY_BLOCK;
         BLOCK_R_FLAG(cur) = BUSY_BLOCK;
-        allocator_list_push_back(&(a->busy_lst), cur);        
+        allocator_list_push_back(&(a->busy_list), cur);
         return BLOCK_DATA(cur);
     }
 
@@ -176,7 +185,7 @@ void*allocator_malloc_block(allocator_type_t a, size_t sizemem)
     BLOCK_LIST_NEXT(cur) = NULL;
     BLOCK_R_DATA_LEN(cur) = sizemem;
     BLOCK_R_FLAG(cur) = BUSY_BLOCK;
-    allocator_list_push_back(&(a->busy_lst), cur);
+    allocator_list_push_back(&(a->busy_list), cur);
     
     /* put free block to free list. */
     tmp_block = BLOCK_ARR_NEXT(cur);
@@ -186,7 +195,7 @@ void*allocator_malloc_block(allocator_type_t a, size_t sizemem)
     BLOCK_LIST_NEXT(tmp_block) = NULL;
     BLOCK_R_DATA_LEN(tmp_block) = len;
     BLOCK_R_FLAG(tmp_block) = FREE_BLOCK;
-    allocator_list_insert_elem(&(a->free_lst), tmp_block);
+    allocator_list_insert_elem(&(a->free_list), tmp_block);
     
     return BLOCK_DATA(cur);
 }
@@ -196,23 +205,24 @@ void*allocator_realloc_block(allocator_type_t a, void*ptrmem, size_t sizemem)
     void*orig;
     void*cur;
 
-    if ((BLOCK_L_DATA_LEN(a->free_lst.last) + BLOCK_OVERHEAD) < sizemem) {
+    if ((BLOCK_L_DATA_LEN(a->free_list.last) + BLOCK_OVERHEAD) < sizemem) {
         return NULL;
-    }    
+    }
 
     orig = BLOCK_PTR_FROM_DATA(ptrmem);
 
-    cur = allocator_list_search_by_sizemem(&(a->free_lst), sizemem);
+    cur = allocator_list_search_by_sizemem(&(a->free_list), sizemem);
 
     /* remove block from list. */
-    allocator_list_remove_elem(&(a->free_lst), cur);
+    allocator_list_remove_elem(&(a->free_list), cur);
 
     if (BLOCK_L_DATA_LEN(cur) < (sizemem + MIN_BLOCK_LEN)) {
         /* don't need to divide block. */
         BLOCK_L_FLAG(cur) = BUSY_BLOCK;
         BLOCK_R_FLAG(cur) = BUSY_BLOCK;
-        allocator_list_push_back(&(a->busy_lst), cur);
+        allocator_list_push_back(&(a->busy_list), cur);
         memcpy(BLOCK_DATA(cur), BLOCK_DATA(orig), BLOCK_L_DATA_LEN(orig));
+        allocator_free_block(a, ptrmem);
         return BLOCK_DATA(cur);
     }
 
@@ -229,7 +239,7 @@ void*allocator_realloc_block(allocator_type_t a, void*ptrmem, size_t sizemem)
     BLOCK_LIST_NEXT(cur) = NULL;
     BLOCK_R_DATA_LEN(cur) = sizemem;
     BLOCK_R_FLAG(cur) = BUSY_BLOCK;
-    allocator_list_push_back(&(a->busy_lst), cur);
+    allocator_list_push_back(&(a->busy_list), cur);
     memcpy(BLOCK_DATA(cur), BLOCK_DATA(orig), BLOCK_L_DATA_LEN(orig));
     
     /* put free block to free list. */
@@ -240,15 +250,62 @@ void*allocator_realloc_block(allocator_type_t a, void*ptrmem, size_t sizemem)
     BLOCK_LIST_NEXT(tmp_block) = NULL;
     BLOCK_R_DATA_LEN(tmp_block) = len;
     BLOCK_R_FLAG(tmp_block) = FREE_BLOCK;
-    allocator_list_insert_elem(&(a->free_lst), tmp_block);
-    
+    allocator_list_insert_elem(&(a->free_list), tmp_block);
+    allocator_free_block(a, ptrmem);
+
     return BLOCK_DATA(cur);
 }
 
 void allocator_free_block(allocator_type_t a, void*ptrmem)
 {
-    // TODO.
-    printf("free is not implemented\n");
-    exit(1);
+    void*cur = BLOCK_PTR_FROM_DATA(ptrmem);
+    void*arr_prev = NULL;
+    void*arr_next = NULL;
+    if ((cur == a->mem) ||
+        (BLOCK_L_FLAG(BLOCK_ARR_PREV(cur)) == BUSY_BLOCK)) {
+        arr_prev = NULL;
+    } else {
+        arr_prev = BLOCK_ARR_PREV(cur);
+    }
+
+    if (((cur + BLOCK_L_DATA_LEN(cur) + BLOCK_OVERHEAD) >= (void*) (a->mem + a->sizemem)) ||
+        (BLOCK_L_FLAG(BLOCK_ARR_NEXT(cur)) == BUSY_BLOCK)) {
+        arr_next = NULL;
+    } else {
+        arr_next = BLOCK_ARR_NEXT(cur);
+    }
+
+    allocator_list_remove_elem(&(a->busy_list), cur);
+    
+    if ((arr_prev != NULL) && (arr_next == NULL)) {
+        /* concatenate previous free array block with current block. */
+        size_t len = BLOCK_L_DATA_LEN(arr_prev) + BLOCK_R_OVERHEAD + BLOCK_L_OVERHEAD + BLOCK_L_DATA_LEN(cur);
+        allocator_list_remove_elem(&(a->free_list), arr_prev);
+        BLOCK_L_DATA_LEN(arr_prev) = len;
+        BLOCK_R_DATA_LEN(cur) = len;
+        allocator_list_insert_elem(&(a->free_list), arr_prev);
+    } else if ((arr_prev == NULL) && (arr_next != NULL)) {
+        /* concatenate current block with next free array block. */
+        size_t len = BLOCK_L_DATA_LEN(cur) + BLOCK_R_OVERHEAD + BLOCK_L_OVERHEAD + BLOCK_L_DATA_LEN(arr_next);
+        allocator_list_remove_elem(&(a->free_list), arr_next);
+        BLOCK_L_DATA_LEN(cur) = len;
+        BLOCK_R_DATA_LEN(arr_next) = len;
+        allocator_list_insert_elem(&(a->free_list), cur);
+    } else if ((arr_prev != NULL) && (arr_next != NULL)) {
+        /* concatenate previous free array block with current block with next free array block. */
+        size_t len =
+            BLOCK_L_DATA_LEN(arr_prev) + BLOCK_R_OVERHEAD +
+            BLOCK_L_OVERHEAD + BLOCK_L_DATA_LEN(cur) + BLOCK_R_OVERHEAD +
+            BLOCK_L_OVERHEAD + BLOCK_L_DATA_LEN(arr_next);
+        allocator_list_remove_elem(&(a->free_list), arr_prev);
+        allocator_list_remove_elem(&(a->free_list), arr_next);
+        BLOCK_L_DATA_LEN(arr_prev) = len;
+        BLOCK_R_DATA_LEN(arr_next) = len;
+        allocator_list_insert_elem(&(a->free_list), arr_prev);
+    } else {
+        BLOCK_L_FLAG(cur) = FREE_BLOCK;
+        BLOCK_R_FLAG(cur) = FREE_BLOCK;
+        allocator_list_insert_elem(&(a->free_list), cur);
+    }
 }
 

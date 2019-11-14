@@ -9,6 +9,7 @@ struct GARBAGE_COLLECTOR
     struct VALUE**stack_top;
 
     struct ALLOCATOR a;
+    struct ALLOCATOR b;    
 };
 
 garbage_collector_type_t create_garbage_collector()
@@ -31,7 +32,7 @@ struct OBJECT*garbage_collector_malloc_obj(garbage_collector_type_t gc, unsigned
     size_t start_properties_cap = start_properties_num * 2;
     size_t sizemem = sizeof(struct OBJECT) + sizeof(struct PROPERTY) * start_properties_cap;
     
-    if ((BLOCK_L_DATA_LEN(gc->a.free_lst.last) + BLOCK_OVERHEAD) >= sizemem) {
+    if ((BLOCK_L_DATA_LEN(gc->a.free_list.last) + BLOCK_OVERHEAD) >= sizemem) {
         obj = allocator_malloc_block(&(gc->a), sizemem);
         obj->properties_len = 0;
         obj->properties_cap = start_properties_cap;
@@ -63,7 +64,7 @@ static void change_one_ptr(garbage_collector_type_t gc, struct OBJECT*prev_obj_p
         }
     }
 
-    cur = gc->a.busy_lst.first;
+    cur = gc->a.busy_list.first;
 
     while (cur != NULL) {
         obj = BLOCK_DATA(cur);
@@ -84,9 +85,7 @@ struct OBJECT*garbage_collector_realloc_obj(garbage_collector_type_t gc, struct 
     size_t new_properties_cap = new_properties_num * 2;
     size_t sizemem = sizeof(struct OBJECT) + sizeof(struct PROPERTY) * new_properties_cap;
 
-    if ((BLOCK_L_DATA_LEN(gc->a.free_lst.last) + BLOCK_OVERHEAD) >= sizemem) {
-        printf("kek\n");
-        
+    if ((BLOCK_L_DATA_LEN(gc->a.free_list.last) + BLOCK_OVERHEAD) >= sizemem) {
         new_obj_ptr = allocator_realloc_block(&(gc->a), obj, sizemem);
         change_one_ptr(gc, prev_obj_ptr, new_obj_ptr);
         new_obj_ptr->properties_cap = new_properties_cap;

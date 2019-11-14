@@ -1,18 +1,18 @@
 #include "lexer.h"
 #include "lexer_priv.h"
 
-inline int pos_is_eof(const struct POS*pos)
+__inline__ int pos_is_eof(const struct POS*pos)
 {
     return ((pos->program_len == 0) || (pos->index == (pos->program_len - 1)));
 }
 
-inline int pos_is_whitespace(const struct POS*pos)
+__inline__ int pos_is_whitespace(const struct POS*pos)
 {
     return ((pos_get_code(pos) == ' ') ||
             (pos_get_code(pos) == '\t'));
 }
 
-inline int pos_is_newline(const struct POS*pos)
+__inline__ int pos_is_newline(const struct POS*pos)
 {
     if ((pos->program[pos->index] == '\r') &&
         (pos->index + 1 < pos->program_len)) {
@@ -22,12 +22,12 @@ inline int pos_is_newline(const struct POS*pos)
     return (pos->program[pos->index] == '\n');
 }
 
-inline int pos_is_digit(const struct POS*pos)
+__inline__ int pos_is_digit(const struct POS*pos)
 {
     return ((pos_get_code(pos) >= '0') && (pos_get_code(pos) <= '9'));
 }
 
-inline int pos_is_letter(const struct POS*pos)
+__inline__ int pos_is_letter(const struct POS*pos)
 {
     return (((pos_get_code(pos) >= 'a') && (pos_get_code(pos) <= 'z')) ||
             ((pos_get_code(pos) >= 'A') && (pos_get_code(pos) <= 'Z')));
@@ -51,7 +51,7 @@ int pos_is_unknown(const struct POS*pos)
     return 1;
 }
 
-inline int pos_get_code(const struct POS*pos)
+__inline__ int pos_get_code(const struct POS*pos)
 {
     return pos->program[pos->index];
 }

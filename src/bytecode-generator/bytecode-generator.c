@@ -428,7 +428,7 @@ static enum BYTECODE_GENERATOR_CODES body_ast_bytecode_generate(bytecode_generat
 static int emit_jump(bytecode_generator_type_t bc_gen, unsigned instruction)
 {
     PUSH_BACK(bc_gen->bc->op_codes, instruction);
-    PUSH_BACK(bc_gen->bc->op_codes, 0x0); // empty instruction.
+    PUSH_BACK(bc_gen->bc->op_codes, 0x0); /* empty instruction. */
 
     return bc_gen->bc->op_codes_len - 1;
 }
