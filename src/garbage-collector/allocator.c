@@ -4,8 +4,6 @@
 
 void allocator_malloc_pool(allocator_type_t a, size_t sizemem)
 {
-    unsigned len;
-
     if (sizemem < MIN_BLOCK_LEN) {
         fprintf(stderr, "not enough memory for allocator:\n");
         fprintf(stderr, "got:         %ld bytes\n", sizemem);
@@ -18,7 +16,17 @@ void allocator_malloc_pool(allocator_type_t a, size_t sizemem)
     a->sizemem = sizemem;
     SAFE_MALLOC(a->mem, a->sizemem);
 
-    len = a->sizemem - BLOCK_OVERHEAD;
+    allocator_clean_pool(a);
+}
+
+void allocator_free_pool(allocator_type_t a)
+{
+    SAFE_FREE(a->mem);
+}
+
+void allocator_clean_pool(allocator_type_t a)
+{
+    size_t len = a->sizemem - BLOCK_OVERHEAD;
 
     BLOCK_L_FLAG(a->mem) = FREE_BLOCK;
     BLOCK_L_DATA_LEN(a->mem) = len;
@@ -36,16 +44,6 @@ void allocator_malloc_pool(allocator_type_t a, size_t sizemem)
     a->busy_list.last = NULL;
     a->busy_list.count = 0;
     a->busy_list.sizemem = 0;
-}
-
-void allocator_realloc_pool(allocator_type_t a, size_t sizemem)
-{
-    
-}
-
-void allocator_free_pool(allocator_type_t a)
-{
-    SAFE_FREE(a->mem);
 }
 
 static void allocator_list_remove_elem(struct ALLOCATOR_LIST*list, void*elem)
@@ -172,7 +170,7 @@ void*allocator_malloc_block(allocator_type_t a, size_t sizemem)
         return BLOCK_DATA(cur);
     }
 
-    unsigned len = BLOCK_L_DATA_LEN(cur) - sizemem - BLOCK_OVERHEAD;
+    size_t len = BLOCK_L_DATA_LEN(cur) - sizemem - BLOCK_OVERHEAD;
     void*tmp_block;
     /* have to divide block. */
     
@@ -226,7 +224,7 @@ void*allocator_realloc_block(allocator_type_t a, void*ptrmem, size_t sizemem)
         return BLOCK_DATA(cur);
     }
 
-    unsigned len = BLOCK_L_DATA_LEN(cur) - sizemem - BLOCK_OVERHEAD;
+    size_t len = BLOCK_L_DATA_LEN(cur) - sizemem - BLOCK_OVERHEAD;
     void*tmp_block;
     /* have to divide block. */
     

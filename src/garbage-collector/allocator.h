@@ -67,8 +67,9 @@ struct ALLOCATOR
 typedef struct ALLOCATOR* allocator_type_t;
 
 void allocator_malloc_pool(allocator_type_t a, size_t sizemem);
-void allocator_realloc_pool(allocator_type_t a, size_t sizemem);
 void allocator_free_pool(allocator_type_t a);
+
+void allocator_clean_pool(allocator_type_t a);
 
 void*allocator_malloc_block(allocator_type_t a, size_t sizemem);
 void*allocator_realloc_block(allocator_type_t a, void*ptrmem, size_t sizemem);

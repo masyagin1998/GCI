@@ -13,8 +13,8 @@ garbage_collector_type_t create_garbage_collector();
 
 void garbage_collector_conf(garbage_collector_type_t gc, size_t sizemem_start, struct VALUE**stack, struct VALUE**stack_top);
 
-struct OBJECT*garbage_collector_malloc_obj(garbage_collector_type_t gc, unsigned start_properties_num);
-struct OBJECT*garbage_collector_realloc_obj(garbage_collector_type_t gc, struct OBJECT*obj, unsigned new_properties_num);
+struct OBJECT*garbage_collector_malloc_obj(garbage_collector_type_t gc, size_t start_properties_num);
+struct OBJECT*garbage_collector_realloc_obj(garbage_collector_type_t gc, struct OBJECT*obj, size_t new_properties_num);
 
 void free_garbage_collector(garbage_collector_type_t gc);
 
