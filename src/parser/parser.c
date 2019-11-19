@@ -3,6 +3,7 @@
 #include "utils.h"
 
 #include <stdarg.h>
+#include <string.h>
 
 struct PARSER
 {
@@ -1349,4 +1350,137 @@ enum PARSER_CODES parser_parse(parser_type_t parser, struct UNIT_AST**unit)
 void parser_free(parser_type_t parser)
 {
     SAFE_FREE(parser);
+}
+
+struct PARSER_ERROR parser_get_error(const parser_type_t parser)
+{
+    return parser->err;
+}
+
+void token_type_to_str(enum TOKEN_TYPE type, char*buf, size_t buflen)
+{
+    switch (type) {
+    case TOKEN_TYPE_FUNCTION:
+        strncpy(buf, "FUNCTION", buflen);
+        break;
+    case TOKEN_TYPE_LET:
+        strncpy(buf, "LET", buflen);
+        break;
+    case TOKEN_TYPE_IF:
+        strncpy(buf, "IF", buflen);
+        break;
+    case TOKEN_TYPE_ELSE:
+        strncpy(buf, "ELSE", buflen);
+        break;
+    case TOKEN_TYPE_WHILE:
+        strncpy(buf, "WHILE", buflen);
+        break;
+    case TOKEN_TYPE_BREAK:
+        strncpy(buf, "BREAK", buflen);
+        break;
+    case TOKEN_TYPE_CONTINUE:
+        strncpy(buf, "CONTINUE", buflen);
+        break;
+    case TOKEN_TYPE_RETURN:
+        strncpy(buf, "RETURN", buflen);
+        break;
+    case TOKEN_TYPE_IDENT:
+        strncpy(buf, "IDENT", buflen);
+        break;
+    case TOKEN_TYPE_OR:
+        strncpy(buf, "OR", buflen);
+        break;
+    case TOKEN_TYPE_AND:
+        strncpy(buf, "AND", buflen);
+        break;
+    case TOKEN_TYPE_EQEQ:
+        strncpy(buf, "EQEQ", buflen);
+        break;
+    case TOKEN_TYPE_NEQ:
+        strncpy(buf, "NEQ", buflen);
+        break;
+    case TOKEN_TYPE_LT:
+        strncpy(buf, "LT", buflen);
+        break;
+    case TOKEN_TYPE_GT:
+        strncpy(buf, "GT", buflen);
+        break;
+    case TOKEN_TYPE_LE:
+        strncpy(buf, "LE", buflen);
+        break;
+    case TOKEN_TYPE_GE:
+        strncpy(buf, "GE", buflen);
+        break;
+    case TOKEN_TYPE_EQ:
+        strncpy(buf, "EQ", buflen);
+        break;
+    case TOKEN_TYPE_PLUS:
+        strncpy(buf, "PLUS", buflen);
+        break;
+    case TOKEN_TYPE_MINUS:
+        strncpy(buf, "MINUS", buflen);
+        break;
+    case TOKEN_TYPE_MUL:
+        strncpy(buf, "MUL", buflen);
+        break;
+    case TOKEN_TYPE_DIV:
+        strncpy(buf, "DIV", buflen);
+        break;
+    case TOKEN_TYPE_MOD:
+        strncpy(buf, "MOD", buflen);
+        break;
+    case TOKEN_TYPE_LPAREN:
+        strncpy(buf, "LPAREN", buflen);
+        break;
+    case TOKEN_TYPE_RPAREN:
+        strncpy(buf, "RPAREN", buflen);
+        break;
+    case TOKEN_TYPE_NUMBER:
+        strncpy(buf, "NUMBER", buflen);
+        break;
+    case TOKEN_TYPE_LBRACE:
+        strncpy(buf, "LBRACE", buflen);
+        break;
+    case TOKEN_TYPE_RBRACE:
+        strncpy(buf, "RBRACE", buflen);
+        break;
+    case TOKEN_TYPE_COMMA:
+        strncpy(buf, "COMMA", buflen);
+        break;
+    case TOKEN_TYPE_SEMI:
+        strncpy(buf, "SEMI", buflen);
+        break;
+    case TOKEN_TYPE_DOT:
+        strncpy(buf, "DOT", buflen);
+        break;
+    case TOKEN_TYPE_COLON:
+        strncpy(buf, "COLON", buflen);
+        break;
+    case TOKEN_TYPE_EOF:
+        strncpy(buf, "EOF", buflen);
+        break;
+    case TOKEN_TYPE_UNKNOWN:
+        strncpy(buf, "UNKNOWN", buflen);
+        break;        
+    }
+}
+
+void print_parser_error(const struct PARSER_ERROR*err)
+{
+    size_t i;
+    
+    char tmp[128];
+
+    token_type_to_str(err->get_tok, tmp, sizeof(tmp));
+    fprintf(stderr, "%zu:%zu: error: invalid token: \"%s\"; expected tokens: ",
+            err->line, err->pos, tmp);
+
+    i = 0;
+    while (err->exp_toks[i] != TOKEN_TYPE_EOF) {
+        token_type_to_str(err->exp_toks[i], tmp, sizeof(tmp));        
+        fprintf(stderr, "\"%s\" ", tmp);
+        i++;
+    }
+
+    fprintf(stderr, "\n");
 }

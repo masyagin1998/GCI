@@ -30,6 +30,8 @@ enum PARSER_CODES parser_parse(parser_type_t parser, struct UNIT_AST**unit);
 
 struct PARSER_ERROR parser_get_error(const parser_type_t parser);
 
+void print_parser_error(const struct PARSER_ERROR*pe);
+
 void parser_free(parser_type_t parser);
 
 #endif  /* PARSER_H_INCLUDED */

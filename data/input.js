@@ -1,3 +1,1 @@
-function test() {
-    let a = b * ;
-}
+kek

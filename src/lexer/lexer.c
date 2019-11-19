@@ -65,7 +65,6 @@ void lexer_conf(lexer_type_t lexer, const char*fname)
         exit(EXIT_FAILURE);
     }
     lexer->program[lexer->program_len] = '\0';
-    
 
     lexer->cur.program = lexer->program;
     lexer->cur.program_len = lexer->program_len;

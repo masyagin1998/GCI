@@ -169,7 +169,8 @@ int main(int argc, char**argv)
     parser_conf(parser, lexer);
     r = parser_parse(parser, &unit);
     if (r != PARSER_OK) {
-        printf("ERROR\n");
+        struct PARSER_ERROR err = parser_get_error(parser);
+        print_parser_error(&err);
         lexer_free(lexer);
         parser_free(parser);
         return 1;

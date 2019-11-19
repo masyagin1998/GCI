@@ -66,7 +66,7 @@ int token_read_number(struct TOKEN**tok, const struct POS*pos)
     char tmp_str[64];
     snprintf(tmp_str, sizeof(tmp_str),
              "%.*s",
-             new_tok->frag.following.index - new_tok->frag.starting.index,
+             (int) (new_tok->frag.following.index - new_tok->frag.starting.index),
              new_tok->frag.starting.program + new_tok->frag.starting.index);
 
     new_tok->int_val = atoll(tmp_str);
@@ -95,7 +95,7 @@ void token_read_ident(struct TOKEN**tok,  const struct POS*pos)
 
     snprintf(new_tok->str_val, sizeof(new_tok->str_val),
              "%.*s",
-             new_tok->frag.following.index - new_tok->frag.starting.index,
+             (int) (new_tok->frag.following.index - new_tok->frag.starting.index),
              new_tok->frag.starting.program + new_tok->frag.starting.index);
 
     (*tok) = new_tok;
@@ -134,10 +134,10 @@ void token_read_unknown(struct TOKEN**tok, const struct POS*pos)
 
 #define TOKEN_GEN_STR(group_type)                                       \
     do {                                                                \
-        snprintf(str, len, "<%s line=\"%u\" pos=\"%u\">%.*s</%s>",      \
+        snprintf(str, len, "<%s line=\"%zu\" pos=\"%zu\">%.*s</%s>",    \
                  group_type,                                            \
                  tok->frag.starting.line, tok->frag.starting.pos,       \
-                 tok->frag.following.index - tok->frag.starting.index,  \
+                 (int) (tok->frag.following.index - tok->frag.starting.index), \
                  tok->frag.starting.program + tok->frag.starting.index, \
                  group_type);                                           \
     } while(0)                                                          \
