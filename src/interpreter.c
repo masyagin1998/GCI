@@ -14,12 +14,14 @@ enum INTERPRETER_MODE
     INTERPRETER_PARSE,
     INTERPRETER_BC,
     INTERPRETER_INTERPRET,
+    INTERPRETER_TRACE,    
 };
 
 #define INTERPRETER_LEX_STR       "lex"
 #define INTERPRETER_PARSE_STR     "parse"
 #define INTERPRETER_BC_STR        "bc"
 #define INTERPRETER_INTERPRET_STR "interpet"
+#define INTERPRETER_TRACE_STR     "trace"
 
 struct INTERPRETER_PARAMS
 {
@@ -53,7 +55,7 @@ static void print_help(char*interpreter_name)
     fprintf(stderr, "  --out     (-o)\n");
     fprintf(stderr, "            Path to output file (stdout|stderr) (default: stdout).\n");
     fprintf(stderr, "  --mode    (-m)\n");
-    fprintf(stderr, "            Mode (lex|parse|bc|interpret) (default: interpret).\n");
+    fprintf(stderr, "            Mode (lex|parse|bc|trace|interpret) (default: interpret).\n");
     exit(0);
 }
 
@@ -99,6 +101,8 @@ int parse_args(int argc, char**argv, struct INTERPRETER_PARAMS*params)
                 params->mode = INTERPRETER_BC;
             } else if (strcmp(optarg, INTERPRETER_INTERPRET_STR) == 0) {
                 params->mode = INTERPRETER_INTERPRET;
+            } else if (strcmp(optarg, INTERPRETER_TRACE_STR) == 0) {
+                params->mode = INTERPRETER_TRACE;
             } else {
                 fprintf(stderr, "Invalid interpreter mode \"%s\"", optarg);
                 exit(EXIT_FAILURE);
@@ -135,11 +139,11 @@ void print_bytecode_result(const char*fname, const bytecode_type_t bc)
 }
 
 #define STACK_SIZE 1024
-#define HEAP_SIZE  160
+#define HEAP_SIZE  35
 
 int main(int argc, char**argv)
 {
-    int code;
+    int r = 0;
     
     struct INTERPRETER_PARAMS params;
     lexer_type_t  lexer;
@@ -157,30 +161,56 @@ int main(int argc, char**argv)
 
     if (params.mode == INTERPRETER_LEX) {
         print_lexer_result(params.out, lexer);
-        exit(0);
+        lexer_free(lexer);
+        return 0;
     }
 
     parser = create_parser();
     parser_conf(parser, lexer);
-    code = parser_parse(parser, &unit);
+    r = parser_parse(parser, &unit);
+    if (r != PARSER_OK) {
+        printf("ERROR\n");
+        lexer_free(lexer);
+        parser_free(parser);
+        return 1;
+    }
 
     if (params.mode == INTERPRETER_PARSE) {
         print_parser_result(params.out, unit);
-        exit(0);
+        lexer_free(lexer);
+        parser_free(parser);
+        unit_ast_free(unit);
+        return 0;
     }
+
+    lexer_free(lexer);
+    parser_free(parser);
 
     bc_gen = create_bytecode_generator();
     bytecode_generator_conf(bc_gen, unit);
-    code = bytecode_generator_generate(bc_gen, &bc);
+
+    unit_ast_free(unit);
+    
+    r = bytecode_generator_generate(bc_gen, &bc);
+    if (r != BYTECODE_GENERATOR_OK) {
+        bytecode_generator_free(bc_gen);
+        return 2;
+    }
 
     if (params.mode == INTERPRETER_BC) {
         print_bytecode_result(params.out, bc);
-        exit(0);
+        bytecode_generator_free(bc_gen);
+        bytecode_free(bc);
+        return 0;
     }
+    
+    bytecode_generator_free(bc_gen);
 
     vm = create_virtual_machine();
     virtual_machine_conf(vm, bc, STACK_SIZE, HEAP_SIZE);
     virtual_machine_run(vm);
+    bytecode_free(bc);
+    virtual_machine_free(vm);
 
     return 0;
 }

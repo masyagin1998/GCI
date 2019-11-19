@@ -11,11 +11,11 @@ struct TOKEN*create_token()
     return ptr;
 }
 
-void token_read_keyword(struct TOKEN**tok, const struct POS*pos, enum TOKEN_TYPE tok_type, const char*keyword, unsigned keyword_len)
+void token_read_keyword(struct TOKEN**tok, const struct POS*pos, enum TOKEN_TYPE tok_type, const char*keyword, size_t keyword_len)
 {
     struct TOKEN*new_tok;
     struct POS p = (*pos);
-    unsigned i;
+    size_t i;
 
     PREFIX_UNUSED(keyword);
     
@@ -142,7 +142,7 @@ void token_read_unknown(struct TOKEN**tok, const struct POS*pos)
                  group_type);                                           \
     } while(0)                                                          \
         
-void token_to_xml_string(const struct TOKEN*tok, char*str, unsigned len)
+void token_to_xml_string(const struct TOKEN*tok, char*str, size_t len)
 {
     switch (tok->group_type) {
     case GROUP_TYPE_KEYWORDS:

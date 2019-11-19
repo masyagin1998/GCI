@@ -35,7 +35,7 @@ __inline__ int pos_is_letter(const struct POS*pos)
 
 int pos_is_unknown(const struct POS*pos)
 {
-    unsigned i;
+    size_t i;
     const char symbols[] = { '|', '&', '=', '!', '<', '>', '+', '-', '*', '/', '%', '(', ')', '{', '}', ',', ';', '.', ':' };
     
     if (pos_is_whitespace(pos) || pos_is_newline(pos) || pos_is_digit(pos) || pos_is_letter(pos)) {
@@ -58,9 +58,9 @@ __inline__ int pos_get_code(const struct POS*pos)
 
 struct POS pos_next(const struct POS*pos)
 {
-    unsigned new_line = pos->line;
-    unsigned new_pos = pos->pos;
-    unsigned new_index = pos->index;
+    size_t new_line = pos->line;
+    size_t new_pos = pos->pos;
+    size_t new_index = pos->index;
 
     if (!pos_is_eof(pos)) {
         if (pos_is_newline(pos)) {
@@ -81,9 +81,9 @@ struct POS pos_next(const struct POS*pos)
     };
 }
 
-int pos_check_keyword(const struct POS*pos, const char*keyword, unsigned keyword_len)
+int pos_check_keyword(const struct POS*pos, const char*keyword, size_t keyword_len)
 {
-    unsigned i = 0;
+    size_t i = 0;
 
     struct POS p = (*pos);
 

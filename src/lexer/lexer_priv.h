@@ -13,9 +13,9 @@ int pos_get_code(const struct POS*pos);
 
 struct POS pos_next(const struct POS*pos);
 
-int pos_check_keyword(const struct POS*pos, const char*keyword, unsigned keyword_len);
+int pos_check_keyword(const struct POS*pos, const char*keyword, size_t keyword_len);
 
-void token_read_keyword(struct TOKEN**tok, const struct POS*pos, enum TOKEN_TYPE tok_type, const char*keyword, unsigned keyword_len);
+void token_read_keyword(struct TOKEN**tok, const struct POS*pos, enum TOKEN_TYPE tok_type, const char*keyword, size_t keyword_len);
 int token_read_number(struct TOKEN**tok, const struct POS*pos);
 void token_read_ident(struct TOKEN**tok,  const struct POS*pos);
 void token_read_op(struct TOKEN**tok, enum TOKEN_TYPE tok_type, const struct POS*starting, const struct POS*following);

@@ -30,11 +30,11 @@ void lexer_free(lexer_type_t lexer);
 struct POS
 {
     char*program;
-    unsigned program_len;
+    size_t program_len;
 
-    unsigned line;
-    unsigned pos;
-    unsigned index;
+    size_t line;
+    size_t pos;
+    size_t index;
 };
 
 struct FRAG
@@ -116,7 +116,7 @@ struct TOKEN
 
 struct TOKEN*create_token();
 
-void token_to_xml_string(const struct TOKEN*tok, char*str, unsigned len);
+void token_to_xml_string(const struct TOKEN*tok, char*str, size_t len);
 
 void token_free(struct TOKEN*tok);
 

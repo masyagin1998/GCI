@@ -14,19 +14,19 @@ const char break_keyword[]    = "break";
 const char continue_keyword[] = "continue";
 const char return_keyword[]   = "return";
 
-const unsigned function_keyword_len = sizeof(function_keyword) - 1;
-const unsigned let_keyword_len      = sizeof(let_keyword) - 1;
-const unsigned if_keyword_len       = sizeof(if_keyword) - 1;
-const unsigned else_keyword_len     = sizeof(else_keyword) - 1;
-const unsigned while_keyword_len    = sizeof(while_keyword) - 1;
-const unsigned break_keyword_len    = sizeof(break_keyword) - 1;
-const unsigned continue_keyword_len = sizeof(continue_keyword) - 1;
-const unsigned return_keyword_len   = sizeof(return_keyword) - 1;
+const size_t function_keyword_len = sizeof(function_keyword) - 1;
+const size_t let_keyword_len      = sizeof(let_keyword) - 1;
+const size_t if_keyword_len       = sizeof(if_keyword) - 1;
+const size_t else_keyword_len     = sizeof(else_keyword) - 1;
+const size_t while_keyword_len    = sizeof(while_keyword) - 1;
+const size_t break_keyword_len    = sizeof(break_keyword) - 1;
+const size_t continue_keyword_len = sizeof(continue_keyword) - 1;
+const size_t return_keyword_len   = sizeof(return_keyword) - 1;
 
 struct LEXER
 {
     char     *program;
-    unsigned program_len;
+    size_t program_len;
     char     program_name[256];
 
     struct POS cur;
@@ -43,7 +43,7 @@ void lexer_conf(lexer_type_t lexer, const char*fname)
 {
     FILE*f;
 
-    unsigned read;
+    size_t read;
     
     strncpy(lexer->program_name, fname, sizeof(lexer->program_name));
 
@@ -282,7 +282,7 @@ void lexer_next_token(lexer_type_t lexer, struct TOKEN**tok)
 
         (*cur) = (*tok)->frag.following;
         if ((*tok)->token_type == TOKEN_TYPE_UNKNOWN) {
-            fprintf(stderr, "%s:%u:%u: warning: unknown token ‘‘\n",
+            fprintf(stderr, "%s:%zu:%zu: warning: unknown token ‘‘\n",
                     lexer->program_name,
                     (*tok)->frag.starting.line,
                     (*tok)->frag.starting.pos);

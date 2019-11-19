@@ -92,13 +92,13 @@ struct CONSTANT create_constant_from_functionref(const char*str_cnst);
 
 struct BYTECODE
 {
-    unsigned*op_codes;
-    unsigned op_codes_len;
-    unsigned op_codes_cap;
+    size_t*op_codes;
+    size_t op_codes_len;
+    size_t op_codes_cap;
 
     struct CONSTANT*constant_pool;
-    unsigned constant_pool_len;
-    unsigned constant_pool_cap;
+    size_t constant_pool_len;
+    size_t constant_pool_cap;
 };
 
 typedef struct BYTECODE* bytecode_type_t;

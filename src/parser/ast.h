@@ -10,10 +10,13 @@
 struct UNIT_AST
 {
     struct FUNCTION_DECL_AST**functions;
-    unsigned functions_len;
+    size_t functions_len;
+
+    size_t line;
+    size_t pos;
 };
 
-struct UNIT_AST*create_unit_ast(struct FUNCTION_DECL_AST**functions, unsigned functions_len);
+struct UNIT_AST*create_unit_ast(struct FUNCTION_DECL_AST**functions, size_t functions_len);
 void dump_unit_ast_to_xml_file(FILE*f, const struct UNIT_AST*ast);
 void unit_ast_free(struct UNIT_AST*ast);
 
@@ -26,6 +29,9 @@ struct FUNCTION_DECL_AST
     struct IDENT_AST*function_name;
     struct FORMAL_PARAMETERS_LIST_AST*formal_parameters_list;
     struct BODY_AST*body;
+
+    size_t line;
+    size_t pos;
 };
 
 struct FUNCTION_DECL_AST*create_function_decl_ast(struct IDENT_AST*function_name,
@@ -42,10 +48,13 @@ void function_decl_ast_free(struct FUNCTION_DECL_AST*ast);
 struct FORMAL_PARAMETERS_LIST_AST
 {
     struct IDENT_AST**params;
-    unsigned          params_len;
+    size_t          params_len;
+
+    size_t line;
+    size_t pos;
 };
 
-struct FORMAL_PARAMETERS_LIST_AST*create_formal_parameters_list_ast(struct IDENT_AST**params, unsigned params_len);
+struct FORMAL_PARAMETERS_LIST_AST*create_formal_parameters_list_ast(struct IDENT_AST**params, size_t params_len);
 void dump_formal_parameters_list_ast_to_file(FILE*f, const struct FORMAL_PARAMETERS_LIST_AST*ast);
 void formal_parameters_list_ast_free(struct FORMAL_PARAMETERS_LIST_AST*ast);
 
@@ -56,10 +65,13 @@ void formal_parameters_list_ast_free(struct FORMAL_PARAMETERS_LIST_AST*ast);
 struct BODY_AST
 {
     struct STMT_AST**stmts;
-    unsigned         stmts_len;
+    size_t         stmts_len;
+
+    size_t line;
+    size_t pos;
 };
 
-struct BODY_AST*create_body_ast(struct STMT_AST**stmts, unsigned stmts_len);
+struct BODY_AST*create_body_ast(struct STMT_AST**stmts, size_t stmts_len);
 void dump_body_ast_to_file(FILE*f, const struct BODY_AST*ast);
 void body_ast_free(struct BODY_AST*ast);
 
@@ -115,6 +127,9 @@ struct DECL_STMT_AST
 {
     struct IDENT_AST*new_var_name;
     struct ASSIGNMENT_EXPR_AST*assignment;
+
+    size_t line;
+    size_t pos;
 };
 
 struct DECL_STMT_AST*create_decl_stmt_ast(struct IDENT_AST*new_var_name,
@@ -130,6 +145,9 @@ struct ASSIGN_STMT_AST
 {
     struct VARIABLE_AST*var_name;
     struct ASSIGNMENT_EXPR_AST*assignment;
+
+    size_t line;
+    size_t pos;
 };
 
 struct ASSIGN_STMT_AST*create_assign_stmt_ast(struct VARIABLE_AST*var_name,
@@ -144,6 +162,9 @@ void assign_stmt_ast_free(struct ASSIGN_STMT_AST*ast);
 struct FUNCTION_CALL_STMT_AST
 {
     struct FUNCTION_CALL_AST*function_call;
+
+    size_t line;
+    size_t pos;
 };
  
 struct FUNCTION_CALL_STMT_AST*create_function_call_stmt_ast(struct FUNCTION_CALL_AST*function_call);
@@ -160,6 +181,9 @@ struct IF_STMT_AST
     struct LOGICAL_OR_EXPR_AST*condition;
     struct BODY_AST*if_body;
     struct BODY_AST*else_body;
+
+    size_t line;
+    size_t pos;    
 };
 
 struct IF_STMT_AST*create_if_stmt_ast(struct LOGICAL_OR_EXPR_AST*condition,
@@ -176,6 +200,9 @@ struct WHILE_STMT_AST
 {
     struct LOGICAL_OR_EXPR_AST*condition;
     struct BODY_AST*body;
+
+    size_t line;
+    size_t pos;
 };
 
 struct WHILE_STMT_AST*create_while_stmt_ast(struct LOGICAL_OR_EXPR_AST*condition,
@@ -187,7 +214,10 @@ void while_stmt_ast_free(struct WHILE_STMT_AST*ast);
   break_statement = BREAK SEMI
 */
 
-struct BREAK_STMT_AST {};
+struct BREAK_STMT_AST {
+    size_t line;
+    size_t pos;
+};
 
 struct BREAK_STMT_AST*create_break_stmt_ast();
 void dump_break_stmt_ast_to_file(FILE*f, const struct BREAK_STMT_AST*ast);
@@ -197,7 +227,10 @@ void break_stmt_ast_free(struct BREAK_STMT_AST*ast);
   continue_statement = CONTINUE SEMI
 */
 
-struct CONTINUE_STMT_AST {};
+struct CONTINUE_STMT_AST {
+    size_t line;
+    size_t pos;
+};
 
 struct CONTINUE_STMT_AST*create_continue_stmt_ast();
 void dump_continue_stmt_ast_to_file(FILE*f, const struct CONTINUE_STMT_AST*ast);
@@ -211,6 +244,9 @@ return_statement = RETURN assignment_expr SEMI |
 struct RETURN_STMT_AST
 {
     struct ASSIGNMENT_EXPR_AST*result;
+
+    size_t line;
+    size_t pos;
 };
 
 struct RETURN_STMT_AST*create_return_stmt_ast(struct ASSIGNMENT_EXPR_AST*result);
@@ -224,10 +260,13 @@ void return_stmt_ast_free(struct RETURN_STMT_AST*ast);
 struct VARIABLE_AST
 {
     struct IDENT_AST**idents;
-    unsigned          idents_len;
+    size_t          idents_len;
+
+    size_t line;
+    size_t pos;
 };
 
-struct VARIABLE_AST*create_variable_ast(struct IDENT_AST**idents, unsigned idents_len);
+struct VARIABLE_AST*create_variable_ast(struct IDENT_AST**idents, size_t idents_len);
 void dump_variable_ast_to_file(FILE*f, const struct VARIABLE_AST*ast);
 void variable_ast_free(struct VARIABLE_AST*ast);
 
@@ -264,10 +303,13 @@ void assignment_expr_ast_free(struct ASSIGNMENT_EXPR_AST*ast);
 struct OBJECT_LITERAL_AST
 {
     struct PROPERTY_AST**properties;
-    unsigned         properties_len;
+    size_t         properties_len;
+
+    size_t line;
+    size_t pos;
 };
 
-struct OBJECT_LITERAL_AST*create_object_literal_ast(struct PROPERTY_AST**properties, unsigned properties_len);
+struct OBJECT_LITERAL_AST*create_object_literal_ast(struct PROPERTY_AST**properties, size_t properties_len);
 void dump_object_literal_ast_to_file(FILE*f, const struct OBJECT_LITERAL_AST*ast);
 void object_literal_ast_free(struct OBJECT_LITERAL_AST*ast);
 
@@ -280,6 +322,9 @@ struct PROPERTY_AST
 {
     struct IDENT_AST*key;
     struct ASSIGNMENT_EXPR_AST*value;
+
+    size_t line;
+    size_t pos;
 };
 
 struct PROPERTY_AST*create_property_ast(struct IDENT_AST*key, struct ASSIGNMENT_EXPR_AST*value);
@@ -293,10 +338,13 @@ void property_ast_free(struct PROPERTY_AST*ast);
 struct LOGICAL_OR_EXPR_AST
 {
     struct LOGICAL_AND_EXPR_AST**and_exprs;
-    unsigned                     and_exprs_len;
+    size_t                     and_exprs_len;
+
+    size_t line;
+    size_t pos;
 };
 
-struct LOGICAL_OR_EXPR_AST*create_logical_or_expr_ast(struct LOGICAL_AND_EXPR_AST**and_exprs, unsigned and_exprs_len);
+struct LOGICAL_OR_EXPR_AST*create_logical_or_expr_ast(struct LOGICAL_AND_EXPR_AST**and_exprs, size_t and_exprs_len);
 void dump_logical_or_expr_ast_to_file(FILE*f, const struct LOGICAL_OR_EXPR_AST*ast);
 void logical_or_expr_ast_free(struct LOGICAL_OR_EXPR_AST*ast);
 
@@ -307,10 +355,13 @@ void logical_or_expr_ast_free(struct LOGICAL_OR_EXPR_AST*ast);
 struct LOGICAL_AND_EXPR_AST
 {
     struct EQ_EXPR_AST**eq_exprs;
-    unsigned            eq_exprs_len;
+    size_t            eq_exprs_len;
+
+    size_t line;
+    size_t pos;
 };
 
-struct LOGICAL_AND_EXPR_AST*create_logical_and_expr_ast(struct EQ_EXPR_AST**eq_exprs, unsigned eq_exprs_len);
+struct LOGICAL_AND_EXPR_AST*create_logical_and_expr_ast(struct EQ_EXPR_AST**eq_exprs, size_t eq_exprs_len);
 void dump_logical_and_expr_ast_to_file(FILE*f, const struct LOGICAL_AND_EXPR_AST*ast);
 void logical_and_expr_ast_free(struct LOGICAL_AND_EXPR_AST*ast);
 
@@ -330,6 +381,9 @@ struct EQ_EXPR_AST
     struct RELATIONAL_EXPR_AST*left;
     enum AST_EQ_OP eq_op;
     struct RELATIONAL_EXPR_AST*right;
+
+    size_t line;
+    size_t pos;
 };
 
 struct EQ_EXPR_AST*create_eq_expr_ast(struct RELATIONAL_EXPR_AST*left,
@@ -356,6 +410,9 @@ struct RELATIONAL_EXPR_AST
     struct ADDITIVE_EXPR_AST*left;
     enum AST_REL_OP rel_op;
     struct ADDITIVE_EXPR_AST*right;
+
+    size_t line;
+    size_t pos;
 };
 
 struct RELATIONAL_EXPR_AST*create_relational_expr_ast(struct ADDITIVE_EXPR_AST*left,
@@ -379,12 +436,15 @@ struct ADDITIVE_EXPR_AST
 {
     struct MULTIPLICATIVE_EXPR_AST**muls;
     enum AST_ADDITIVE_OP*ops;
-    unsigned muls_len;
+    size_t muls_len;
+
+    size_t line;
+    size_t pos;
 };
 
 struct ADDITIVE_EXPR_AST*create_additive_expr_ast(struct MULTIPLICATIVE_EXPR_AST**muls,
                                                   enum AST_ADDITIVE_OP*ops,
-                                                  unsigned muls_len);
+                                                  size_t muls_len);
 void dump_additive_expr_ast_to_file(FILE*f, const struct ADDITIVE_EXPR_AST*ast);
 void additive_expr_ast_free(struct ADDITIVE_EXPR_AST*ast);
 
@@ -404,12 +464,15 @@ struct MULTIPLICATIVE_EXPR_AST
 {
     struct LEFT_UNARY_EXPR_AST**lues;
     enum AST_MULTIPLICATIVE_OP*ops;
-    unsigned lues_len;
+    size_t lues_len;
+
+    size_t line;
+    size_t pos;
 };
 
 struct MULTIPLICATIVE_EXPR_AST*create_multiplicative_expr_ast(struct LEFT_UNARY_EXPR_AST**lues,
                                                               enum AST_MULTIPLICATIVE_OP*ops,
-                                                              unsigned lues_len);
+                                                              size_t lues_len);
 void dump_multiplicative_expr_ast_to_file(FILE*f, const struct MULTIPLICATIVE_EXPR_AST*ast);
 void multiplicative_expr_ast_free(struct MULTIPLICATIVE_EXPR_AST*ast);
 
@@ -428,6 +491,9 @@ struct LEFT_UNARY_EXPR_AST
 {
     enum AST_LEFT_UNARY_OP op;
     struct PRIMARY_EXPR_AST*expr;
+
+    size_t line;
+    size_t pos;
 };
 
 struct LEFT_UNARY_EXPR_AST*create_left_unary_expr_ast(enum AST_LEFT_UNARY_OP op, struct PRIMARY_EXPR_AST*expr);
@@ -471,6 +537,9 @@ struct FUNCTION_CALL_AST
 {
     struct IDENT_AST*function_name;
     struct ARGS_LIST_AST*args_list;
+
+    size_t line;
+    size_t pos;
 };
 
 struct FUNCTION_CALL_AST*create_function_call_ast(struct IDENT_AST*function_name, struct ARGS_LIST_AST*args_list);
@@ -484,10 +553,13 @@ void function_call_ast_free(struct FUNCTION_CALL_AST*ast);
 struct ARGS_LIST_AST
 {
     struct ASSIGNMENT_EXPR_AST**assignment_exprs;
-    unsigned                    assignment_exprs_len;
+    size_t                    assignment_exprs_len;
+
+    size_t line;
+    size_t pos;
 };
 
-struct ARGS_LIST_AST*create_args_list_ast(struct ASSIGNMENT_EXPR_AST**assignment_exprs, unsigned assignment_exprs_len);
+struct ARGS_LIST_AST*create_args_list_ast(struct ASSIGNMENT_EXPR_AST**assignment_exprs, size_t assignment_exprs_len);
 void dump_args_list_ast_to_file(FILE*f, const struct ARGS_LIST_AST*ast);
 void args_list_ast_free(struct ARGS_LIST_AST*ast);
 
@@ -502,6 +574,9 @@ void args_list_ast_free(struct ARGS_LIST_AST*ast);
 struct IDENT_AST
 {
     char ident[32];
+
+    size_t line;
+    size_t pos;
 };
 
 struct IDENT_AST*create_ident_ast(const char*ident);
@@ -515,6 +590,9 @@ void ident_ast_free(struct IDENT_AST*ast);
 struct NUMBER_AST
 {
     long long number;
+
+    size_t line;
+    size_t pos;
 };
 
 struct NUMBER_AST*create_number_ast(long long number);

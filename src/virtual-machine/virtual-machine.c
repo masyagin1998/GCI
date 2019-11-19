@@ -35,11 +35,11 @@ static struct VALUE create_value_from_obj(struct OBJECT*obj_val)
 struct VIRTUAL_MACHINE
 {
     bytecode_type_t bc;
-    unsigned*ip;
+    size_t*ip;
     
     struct VALUE*stack;
     struct VALUE*stack_top;
-    unsigned stack_cap;
+    size_t stack_cap;
 
     garbage_collector_type_t gc;
 };
@@ -51,7 +51,7 @@ virtual_machine_type_t create_virtual_machine()
     return vm;
 }
 
-void virtual_machine_conf(virtual_machine_type_t vm, bytecode_type_t bc, unsigned stack_size, unsigned start_heap_size_b)
+void virtual_machine_conf(virtual_machine_type_t vm, bytecode_type_t bc, size_t stack_size, size_t start_heap_size_b)
 {
     vm->bc = bc;
     vm->ip = bc->op_codes;
@@ -80,9 +80,9 @@ static struct VALUE virtual_machine_stack_pop(virtual_machine_type_t vm)
 
 struct OBJECT*create_obj(virtual_machine_type_t vm)
 {
-    unsigned i;
+    size_t i;
 
-    unsigned properties_num = READ_BYTE();
+    size_t properties_num = READ_BYTE();
     
     struct OBJECT*obj = garbage_collector_malloc_obj(vm->gc, properties_num);
     
@@ -103,7 +103,7 @@ struct OBJECT*create_obj(virtual_machine_type_t vm)
 void virtual_machine_run(virtual_machine_type_t vm)
 {
     while (1) {
-        unsigned instruction = READ_BYTE();
+        size_t instruction = READ_BYTE();
         switch (instruction) {
         case BC_OP_POP: {
             virtual_machine_stack_pop(vm);
@@ -118,15 +118,15 @@ void virtual_machine_run(virtual_machine_type_t vm)
         }
 
         case BC_OP_SET_LOCAL: {
-            unsigned idx = READ_BYTE();
+            size_t idx = READ_BYTE();
             vm->stack[idx] = *(vm->stack_top - 1);
-            if (idx != (vm->stack_top - vm->stack - 1)) {
+            if (idx != (size_t) (vm->stack_top - vm->stack - 1)) {
                 virtual_machine_stack_pop(vm);
             }
             break;
         }
         case BC_OP_GET_LOCAL: {
-            unsigned idx = READ_BYTE();
+            size_t idx = READ_BYTE();
             virtual_machine_stack_push(vm, vm->stack[idx]);
             break;
         }
@@ -143,13 +143,13 @@ void virtual_machine_run(virtual_machine_type_t vm)
             break;
         }
         case BC_OP_SET_HEAP: {
-            unsigned i, j;
-            unsigned idx = READ_BYTE();
-            unsigned len = READ_BYTE();
+            size_t i, j;
+            size_t idx = READ_BYTE();
+            size_t len = READ_BYTE();
             struct VALUE val = vm->stack[idx];
             for (i = 0; i < len; i++) {
-                unsigned key = READ_BYTE();
-                unsigned found = 0;
+                size_t key = READ_BYTE();
+                size_t found = 0;
                 for (j = 0; j < val.obj_val->properties_len; j++) {
                     if (val.obj_val->properties[j].key == key) {
                         if (i < len - 1) {
@@ -184,13 +184,13 @@ void virtual_machine_run(virtual_machine_type_t vm)
             break;
         }
         case BC_OP_GET_HEAP: {
-            unsigned i, j;
-            unsigned idx = READ_BYTE();
-            unsigned len = READ_BYTE();
+            size_t i, j;
+            size_t idx = READ_BYTE();
+            size_t len = READ_BYTE();
             struct VALUE val = vm->stack[idx];
             for (i = 0; i < len; i++) {
-                unsigned key = READ_BYTE();
-                unsigned found = 0;
+                size_t key = READ_BYTE();
+                size_t found = 0;
                 for (j = 0; j < val.obj_val->properties_len; j++) {
                     if (val.obj_val->properties[j].key == key) {
                         val = val.obj_val->properties[j].val;
@@ -199,7 +199,7 @@ void virtual_machine_run(virtual_machine_type_t vm)
                     }
                 }
                 if (!found) {
-                    printf("unknown fieldref: %d\n", key);
+                    printf("unknown fieldref: %zu\n", key);
                     exit(1);
                 }                
             }
