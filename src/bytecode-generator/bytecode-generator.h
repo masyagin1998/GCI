@@ -22,6 +22,12 @@ enum BYTECODE_GENERATOR_CODES bytecode_generator_generate(bytecode_generator_typ
 
 void bytecode_generator_free(bytecode_generator_type_t bc);
 
+enum BC_HEAP_OP
+{
+    BC_ARRAY_INDEX,  /* get value by array index.   */
+    BC_OBJECT_FIELD, /* get value by objects field. */
+};
+
 enum BC_OP_CODES
 {
     BC_OP_POP, /* remove value from stack */
@@ -34,6 +40,9 @@ enum BC_OP_CODES
 
     BC_OP_CREATE_OBJ,    /* create object in heap.        */
     BC_OP_INIT_OBJ_PROP, /* initialize object's property. */
+
+    BC_OP_CREATE_ARR,    /* create array in heap.         */
+
     BC_OP_GET_HEAP,      /* get heap variable value.      */
     BC_OP_SET_HEAP,      /* set heap variable value.      */
 

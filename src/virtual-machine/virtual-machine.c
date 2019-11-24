@@ -32,6 +32,14 @@ static struct VALUE create_value_from_obj(struct OBJECT*obj_val)
     return val;
 }
 
+static struct VALUE create_value_from_arr(struct ARRAY*arr_val)
+{
+    struct VALUE val;
+    val.arr_val = arr_val;
+    val.type = VALUE_TYPE_ARR;
+    return val;
+}
+
 struct VIRTUAL_MACHINE
 {
     bytecode_type_t bc;
@@ -100,6 +108,23 @@ struct OBJECT*create_obj(virtual_machine_type_t vm)
     return obj;
 }
 
+struct ARRAY*create_arr(virtual_machine_type_t vm)
+{
+    size_t i;
+
+    size_t arr_len = READ_BYTE();
+
+    struct ARRAY*arr = garbage_collector_malloc_arr(vm->gc, arr_len);
+
+    for (i = 0; i < arr_len; i++) {
+        struct VALUE val = virtual_machine_stack_pop(vm);
+        arr->values[i] = val;
+    }
+    arr->len = arr_len;
+
+    return arr;
+}
+
 void virtual_machine_run(virtual_machine_type_t vm)
 {
     while (1) {
@@ -142,12 +167,21 @@ void virtual_machine_run(virtual_machine_type_t vm)
             virtual_machine_stack_push(vm, val);
             break;
         }
+
+        case BC_OP_CREATE_ARR: {
+            struct ARRAY*arr = create_arr(vm);
+            struct VALUE val = create_value_from_arr(arr);
+            virtual_machine_stack_push(vm, val);
+            break;            
+        }
+            
         case BC_OP_SET_HEAP: {
             size_t i, j;
             size_t idx = READ_BYTE();
             size_t len = READ_BYTE();
             struct VALUE val = vm->stack[idx];
             for (i = 0; i < len; i++) {
+                size_t tmp = READ_BYTE();
                 size_t key = READ_BYTE();
                 size_t found = 0;
                 for (j = 0; j < val.obj_val->properties_len; j++) {
@@ -187,22 +221,46 @@ void virtual_machine_run(virtual_machine_type_t vm)
             size_t i, j;
             size_t idx = READ_BYTE();
             size_t len = READ_BYTE();
+            size_t pops = 0;
             struct VALUE val = vm->stack[idx];
             for (i = 0; i < len; i++) {
-                size_t key = READ_BYTE();
-                size_t found = 0;
-                for (j = 0; j < val.obj_val->properties_len; j++) {
-                    if (val.obj_val->properties[j].key == key) {
-                        val = val.obj_val->properties[j].val;
-                        found = 1;
-                        break;
+                enum BC_HEAP_OP hop = READ_BYTE();
+                if (hop == BC_ARRAY_INDEX) {
+                    pops++;
+                    size_t offset = READ_BYTE();
+                    printf("offset: %lu\n", offset);
+                    struct VALUE index = *(vm->stack_top - offset - 1);
+                    printf("type: %d\n", index.type == VALUE_TYPE_INTEGER);
+                    if (index.int_val < 0) {
+                        printf("invalid array index: %lld\n", index.int_val);
+                        exit(1);
+                    }
+                    if ((size_t) index.int_val > val.arr_val->len) {
+                        printf("array index to unitialized data: %lld\n", index.int_val);
+                        exit(1);
+                    }
+                    val = val.arr_val->values[index.int_val];
+                } else if (hop == BC_OBJECT_FIELD) {
+                    size_t key = READ_BYTE();
+                    size_t found = 0;
+                    for (j = 0; j < val.obj_val->properties_len; j++) {
+                        if (val.obj_val->properties[j].key == key) {
+                            val = val.obj_val->properties[j].val;
+                            found = 1;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        printf("unknown fieldref: %zu\n", key);
+                        exit(1);
                     }
                 }
-                if (!found) {
-                    printf("unknown fieldref: %zu\n", key);
-                    exit(1);
-                }                
             }
+
+            for (i = 0; i < pops; i++) {
+                virtual_machine_stack_pop(vm);
+            }
+            
             virtual_machine_stack_push(vm, val);
             break;
         }

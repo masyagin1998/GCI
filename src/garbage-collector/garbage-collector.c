@@ -144,7 +144,7 @@ struct OBJECT*garbage_collector_malloc_obj(garbage_collector_type_t gc, size_t s
     printf("HEEEH\n");
     printf("KEEEK: %lu, %lu\n", BLOCK_L_DATA_LEN(gc->a.free_list.last), sizemem + BLOCK_OVERHEAD);
 
-    return malloc_obj_force(gc, start_properties_cap, sizemem);;
+    return malloc_obj_force(gc, start_properties_cap, sizemem);
 }
 
 static void change_one_ptr(garbage_collector_type_t gc, struct OBJECT*prev_obj_ptr, struct OBJECT*new_obj_ptr)
@@ -211,4 +211,60 @@ void free_garbage_collector(garbage_collector_type_t gc)
 {
     allocator_free_pool(&(gc->a));
     SAFE_FREE(gc);
+}
+
+static struct ARRAY*malloc_arr_force(garbage_collector_type_t gc, size_t start_cap, size_t sizemem)
+{
+    struct ARRAY*arr;
+
+    arr = allocator_malloc_block(&(gc->a), sizemem);
+    arr->len = 0;
+    arr->cap = start_cap;
+    
+    return arr;
+}
+
+struct ARRAY*garbage_collector_malloc_arr(garbage_collector_type_t gc, size_t arr_len)
+{
+    size_t start_arr_cap = arr_len * 2;
+    size_t sizemem = sizeof(struct ARRAY) + sizeof(struct VALUE) * start_arr_cap;
+    
+    if ((gc->a.free_list.last != NULL) && (BLOCK_L_DATA_LEN(gc->a.free_list.last) >= (sizemem + BLOCK_OVERHEAD))) {
+        return malloc_arr_force(gc, start_arr_cap, sizemem);
+    }
+
+    /* need garbage collection. */
+    run_gc(gc, NULL, sizemem);
+
+    printf("HEEEH\n");
+    printf("KEEEK: %lu, %lu\n", BLOCK_L_DATA_LEN(gc->a.free_list.last), sizemem + BLOCK_OVERHEAD);
+
+    return malloc_arr_force(gc, start_arr_cap, sizemem);
+}
+
+static struct ARRAY*realloc_arr_force(garbage_collector_type_t gc,
+                                       struct ARRAY*arr,
+                                       size_t new_arr_cap, size_t sizemem)
+{
+    struct ARRAY*prev_arr_ptr = arr;
+    struct ARRAY*new_arr_ptr = NULL;
+    new_arr_ptr = allocator_realloc_block(&(gc->a), prev_arr_ptr, sizemem);
+    change_one_ptr(gc, prev_arr_ptr, new_arr_ptr);
+    new_arr_ptr->cap = new_arr_cap;
+    return new_arr_ptr;    
+}
+
+struct ARRAY*garbage_collector_realloc_arr(garbage_collector_type_t gc, struct ARRAY*arr, size_t new_arr_len)
+{
+    size_t new_arr_cap = new_arr_len * 2;
+    size_t sizemem = sizeof(struct ARRAY) + sizeof(struct VALUE) * new_arr_cap;
+
+    if ((gc->a.free_list.last != NULL) && (BLOCK_L_DATA_LEN(gc->a.free_list.last) >= (sizemem + BLOCK_OVERHEAD))) {
+        return realloc_arr_force(gc, arr, new_arr_cap, sizemem);
+    }
+
+    /* need garbage collection. */
+    run_gc(gc, (void**) &arr, sizemem);
+
+    return realloc_arr_force(gc, arr, new_arr_cap, sizemem);
 }

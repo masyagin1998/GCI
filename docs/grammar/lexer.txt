@@ -5,6 +5,8 @@ ELSE     = else
 WHILE    = while
 BREAK    = break
 CONTINUE = continue
+APPEND   = append
+DELETE   = delete
 RETURN   = return
 
 IDENT    = [a-z]([a-z]|[0-9])*
@@ -30,6 +32,9 @@ LPAREN   = (
 RPAREN   = )
 
 NUMBER   = [0-9]*(.[0-9]*)?
+
+LBRACKET = [
+RBRACKET = ]
 
 LBRACE   = {
 RBRACE   = }

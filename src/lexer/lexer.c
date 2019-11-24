@@ -12,6 +12,8 @@ const char else_keyword[]     = "else";
 const char while_keyword[]    = "while";
 const char break_keyword[]    = "break";
 const char continue_keyword[] = "continue";
+const char append_keyword[]   = "append";
+const char delete_keyword[]   = "delete";
 const char return_keyword[]   = "return";
 
 const size_t function_keyword_len = sizeof(function_keyword) - 1;
@@ -21,6 +23,8 @@ const size_t else_keyword_len     = sizeof(else_keyword) - 1;
 const size_t while_keyword_len    = sizeof(while_keyword) - 1;
 const size_t break_keyword_len    = sizeof(break_keyword) - 1;
 const size_t continue_keyword_len = sizeof(continue_keyword) - 1;
+const size_t append_keyword_len   = sizeof(append_keyword) - 1;
+const size_t delete_keyword_len   = sizeof(delete_keyword) - 1;
 const size_t return_keyword_len   = sizeof(return_keyword) - 1;
 
 struct LEXER
@@ -152,6 +156,22 @@ void lexer_next_token(lexer_type_t lexer, struct TOKEN**tok)
             }
             break;
         }
+        case 'a': {
+            if (pos_check_keyword(cur, append_keyword, append_keyword_len)) {
+                token_read_keyword(tok, cur, TOKEN_TYPE_APPEND, append_keyword, append_keyword_len);
+            } else {
+                goto eat_ident;
+            }
+            break;
+        }
+        case 'd': {
+            if (pos_check_keyword(cur, delete_keyword, delete_keyword_len)) {
+                token_read_keyword(tok, cur, TOKEN_TYPE_DELETE, delete_keyword, delete_keyword_len);
+            } else {
+                goto eat_ident;
+            }
+            break;
+        }            
         case 'r': {
             if (pos_check_keyword(cur, return_keyword, return_keyword_len)) {
                 token_read_keyword(tok, cur, TOKEN_TYPE_RETURN, return_keyword, return_keyword_len);
@@ -237,6 +257,14 @@ void lexer_next_token(lexer_type_t lexer, struct TOKEN**tok)
         case ')': {
             token_read_op(tok, TOKEN_TYPE_RPAREN, cur, &cur_next);
             break;            
+        }
+        case '[': {
+            token_read_op(tok, TOKEN_TYPE_LBRACKET, cur, &cur_next);            
+            break;
+        }
+        case ']': {
+            token_read_op(tok, TOKEN_TYPE_RBRACKET, cur, &cur_next);
+            break;
         }
         case '{': {
             token_read_op(tok, TOKEN_TYPE_LBRACE, cur, &cur_next);

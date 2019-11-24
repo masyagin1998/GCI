@@ -21,7 +21,8 @@ void dump_unit_ast_to_xml_file(FILE*f, const struct UNIT_AST*ast);
 void unit_ast_free(struct UNIT_AST*ast);
 
 /*
-  function_decl = FUNCTION IDENT formal_parameters_list body
+function_decl = FUNCTION IDENT LPAREN formal_parameters_list RPAREN body |
+                FUNCTION IDENT LPAREN RPAREN body
 */
 
 struct FUNCTION_DECL_AST
@@ -41,8 +42,7 @@ void dump_function_decl_ast_to_file(FILE*f, const struct FUNCTION_DECL_AST*ast);
 void function_decl_ast_free(struct FUNCTION_DECL_AST*ast);
 
 /*
-  formal_parameters_list = LPAREN IDENT (COMMA IDENT)* RPAREN |
-                           LPAREN RPAREN
+  formal_parameters_list  = IDENT (COMMA IDENT)* RPAREN
 */
 
 struct FORMAL_PARAMETERS_LIST_AST
@@ -254,29 +254,56 @@ void dump_return_stmt_ast_to_file(FILE*f, const struct RETURN_STMT_AST*ast);
 void return_stmt_ast_free(struct RETURN_STMT_AST*ast);
 
 /*
-  variable = IDENT (DOT IDENT)*
+  variable = variable_part (DOT variable_part)*
 */
 
 struct VARIABLE_AST
 {
-    struct IDENT_AST**idents;
-    size_t          idents_len;
+    struct IDENT_AST*ident;
+    struct VARIABLE_PART_AST**parts;
+    size_t                    parts_len;
 
     size_t line;
     size_t pos;
 };
 
-struct VARIABLE_AST*create_variable_ast(struct IDENT_AST**idents, size_t idents_len);
+struct VARIABLE_AST*create_variable_ast(struct IDENT_AST*ident, struct VARIABLE_PART_AST**parts, size_t parts_len);
 void dump_variable_ast_to_file(FILE*f, const struct VARIABLE_AST*ast);
 void variable_ast_free(struct VARIABLE_AST*ast);
 
 /*
-  assignment_expr = object_literal | logical_or_expr
+  variable_part = IDENT (LBRACKET logical_or_expr RBRACKET)?
+*/
+
+enum AST_VARIABLE_PART_TYPE
+{
+    AST_VARIABLE_PART_TYPE_FIELD,
+    AST_VARIABLE_PART_TYPE_INDEX,
+};
+
+struct VARIABLE_PART_AST
+{
+    union
+    {
+        struct IDENT_AST*field;
+        struct LOGICAL_OR_EXPR_AST*index;
+    };
+
+    enum AST_VARIABLE_PART_TYPE type;
+};
+
+struct VARIABLE_PART_AST*create_variable_part_ast(void*variable_part_ptr, enum AST_VARIABLE_PART_TYPE type);
+void dump_variable_part_ast_to_file(FILE*f, const struct VARIABLE_PART_AST*ast);
+void variable_part_ast_free(struct VARIABLE_PART_AST*ast);
+
+/*
+  assignment_expr = object_literal | array_literal | logical_or_expr
 */
 
 enum AST_ASSIGNMENT_EXPR_TYPE
 {
     AST_ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL,
+    AST_ASSIGNMENT_EXPR_TYPE_ARRAY_LITERAL,
     AST_ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR,
 };
 
@@ -285,6 +312,7 @@ struct ASSIGNMENT_EXPR_AST
     union
     {
         struct OBJECT_LITERAL_AST*object_literal;
+        struct ARRAY_LITERAL_AST*array_literal;
         struct LOGICAL_OR_EXPR_AST*logical_or_expr;
     };
 
@@ -330,6 +358,23 @@ struct PROPERTY_AST
 struct PROPERTY_AST*create_property_ast(struct IDENT_AST*key, struct ASSIGNMENT_EXPR_AST*value);
 void dump_property_ast_to_file(FILE*f, const struct PROPERTY_AST*ast);
 void property_ast_free(struct PROPERTY_AST*ast);
+
+/*
+  array_literal = LBRACKET args_list RBRACKET |
+                  LBRACKET RBRACKET
+*/
+
+struct ARRAY_LITERAL_AST
+{
+    struct ARGS_LIST_AST*args_list;
+
+    size_t line;
+    size_t pos;
+};
+
+struct ARRAY_LITERAL_AST*create_array_literal_ast(struct ARGS_LIST_AST*args_list);
+void dump_array_literal_ast_to_file(FILE*f, const struct ARRAY_LITERAL_AST*ast);
+void array_literal_ast_free(struct ARRAY_LITERAL_AST*ast);
 
 /*
   logical_or_expr = logical_and_expr (OR logical_and_expr)*

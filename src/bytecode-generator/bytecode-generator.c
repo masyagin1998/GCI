@@ -136,7 +136,30 @@ static enum BYTECODE_GENERATOR_CODES object_literal_ast_bytecode_generate(byteco
     }
 
     PUSH_BACK(bc_gen->bc->op_codes, BC_OP_CREATE_OBJ);
-    PUSH_BACK(bc_gen->bc->op_codes, ast->properties_len);    
+    PUSH_BACK(bc_gen->bc->op_codes, ast->properties_len);
+
+    return BYTECODE_GENERATOR_OK;
+}
+
+static enum BYTECODE_GENERATOR_CODES array_literal_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct ARRAY_LITERAL_AST*ast)
+{
+    int i;
+
+    if (ast->args_list != NULL) {
+        for (i = ast->args_list->assignment_exprs_len - 1; i >= 0; i--) {
+            assignment_expr_ast_bytecode_generate(bc_gen, ast->args_list->assignment_exprs[i]);
+        }
+    }
+
+    PUSH_BACK(bc_gen->bc->op_codes, BC_OP_CREATE_ARR);
+
+    if (ast->args_list != NULL) {
+        PUSH_BACK(bc_gen->bc->op_codes, ast->args_list->assignment_exprs_len);
+    } else {
+        PUSH_BACK(bc_gen->bc->op_codes, 0);
+    }
+
+    printf("heh\n");
 
     return BYTECODE_GENERATOR_OK;
 }
@@ -152,29 +175,56 @@ static enum BYTECODE_GENERATOR_CODES number_ast_bytecode_generate(bytecode_gener
     return BYTECODE_GENERATOR_OK;
 }
 
-static enum BYTECODE_GENERATOR_CODES variable_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct VARIABLE_AST*ast)
+static enum BYTECODE_GENERATOR_CODES logical_or_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct LOGICAL_OR_EXPR_AST*ast);
+
+static enum BYTECODE_GENERATOR_CODES variabe_ast_bytecode_generate_inner(bytecode_generator_type_t bc_gen, const struct VARIABLE_AST*ast, int is_set_op)
 {
-    int idx = local_variable_index(bc_gen, ast->idents[0]->ident);
+    int idx = local_variable_index(bc_gen, ast->ident->ident);
 
     if (idx == -1) {
 
-    }    
-    
-    if (ast->idents_len == 1) {
-        PUSH_BACK(bc_gen->bc->op_codes, BC_OP_GET_LOCAL);
-        PUSH_BACK(bc_gen->bc->op_codes, idx);
+    }
+
+    if (ast->parts_len == 0) {
+        PUSH_BACK(bc_gen->bc->op_codes, is_set_op ? BC_OP_SET_LOCAL : BC_OP_GET_LOCAL);
+        PUSH_BACK(bc_gen->bc->op_codes, idx);        
     } else {
         size_t i;
-        PUSH_BACK(bc_gen->bc->op_codes, BC_OP_GET_HEAP);
-        PUSH_BACK(bc_gen->bc->op_codes, idx);
-        PUSH_BACK(bc_gen->bc->op_codes, ast->idents_len - 1);
-        for (i = 1; i < ast->idents_len; i++) {
-            struct CONSTANT cnst = create_constant_from_fieldref(ast->idents[i]->ident);
-            PUSH_BACK(bc_gen->bc->op_codes, constant_pool_push_back(bc_gen->bc, cnst));
+        size_t count = 0;
+
+        /* Generate code for array indexes. */
+        for (i = 0; i < ast->parts_len; i++) {
+            if (ast->parts[i]->type == AST_VARIABLE_PART_TYPE_INDEX) {
+                count++;
+                logical_or_expr_ast_bytecode_generate(bc_gen, ast->parts[i]->index);
+            }
         }
+        
+        PUSH_BACK(bc_gen->bc->op_codes, is_set_op ? BC_OP_SET_HEAP : BC_OP_GET_HEAP);
+        PUSH_BACK(bc_gen->bc->op_codes, idx);
+        PUSH_BACK(bc_gen->bc->op_codes, ast->parts_len);
+
+        for (i = 0; i < ast->parts_len; i++) {
+            if (ast->parts[i]->type == AST_VARIABLE_PART_TYPE_FIELD) {
+                struct CONSTANT cnst = create_constant_from_fieldref(ast->parts[i]->field->ident);
+                PUSH_BACK(bc_gen->bc->op_codes, BC_OBJECT_FIELD);
+                PUSH_BACK(bc_gen->bc->op_codes, constant_pool_push_back(bc_gen->bc, cnst));   
+            } else if (ast->parts[i]->type == AST_VARIABLE_PART_TYPE_INDEX) {
+                PUSH_BACK(bc_gen->bc->op_codes, BC_ARRAY_INDEX);
+                count--;
+                PUSH_BACK(bc_gen->bc->op_codes, count);
+            } else {
+                
+            }
+        }   
     }
     
     return BYTECODE_GENERATOR_OK;
+}
+
+static enum BYTECODE_GENERATOR_CODES variable_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct VARIABLE_AST*ast)
+{
+    return variabe_ast_bytecode_generate_inner(bc_gen, ast, 0);
 }
 
 static enum BYTECODE_GENERATOR_CODES function_call_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct FUNCTION_CALL_AST*ast)
@@ -183,8 +233,6 @@ static enum BYTECODE_GENERATOR_CODES function_call_expr_ast_bytecode_generate(by
     
     return BYTECODE_GENERATOR_OK;
 }
-
-static enum BYTECODE_GENERATOR_CODES logical_or_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct LOGICAL_OR_EXPR_AST*ast);
 
 static enum BYTECODE_GENERATOR_CODES primary_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct PRIMARY_EXPR_AST*ast)
 {
@@ -350,6 +398,9 @@ static enum BYTECODE_GENERATOR_CODES assignment_expr_ast_bytecode_generate(bytec
     case AST_ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
         object_literal_ast_bytecode_generate(bc_gen, ast->object_literal);
         break;
+    case AST_ASSIGNMENT_EXPR_TYPE_ARRAY_LITERAL:
+        array_literal_ast_bytecode_generate(bc_gen, ast->array_literal);
+        break;
     case AST_ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
         logical_or_expr_ast_bytecode_generate(bc_gen, ast->logical_or_expr);
         break;
@@ -392,27 +443,7 @@ static enum BYTECODE_GENERATOR_CODES assign_stmt_ast_bytecode_generate(bytecode_
     
     assignment_expr_ast_bytecode_generate(bc_gen, ast->assignment);
 
-    idx = local_variable_index(bc_gen, ast->var_name->idents[0]->ident);
-
-    if (idx == -1) {
-        
-    }
-
-    if (ast->var_name->idents_len == 1) {
-        PUSH_BACK(bc_gen->bc->op_codes, BC_OP_SET_LOCAL);
-        PUSH_BACK(bc_gen->bc->op_codes, idx);
-    } else {
-        size_t i;
-        PUSH_BACK(bc_gen->bc->op_codes, BC_OP_SET_HEAP);
-        PUSH_BACK(bc_gen->bc->op_codes, idx);
-        PUSH_BACK(bc_gen->bc->op_codes, ast->var_name->idents_len - 1);
-        for (i = 1; i < ast->var_name->idents_len; i++) {
-            struct CONSTANT cnst = create_constant_from_fieldref(ast->var_name->idents[i]->ident);
-            PUSH_BACK(bc_gen->bc->op_codes, constant_pool_push_back(bc_gen->bc, cnst));
-        }
-    }
-
-    return BYTECODE_GENERATOR_OK;
+    return variabe_ast_bytecode_generate_inner(bc_gen, ast->var_name, 1);
 }
 
 enum BYTECODE_GENERATOR_CODES function_call_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct FUNCTION_CALL_STMT_AST*ast)
@@ -703,33 +734,37 @@ void dump_bytecode_to_xml_file(FILE*f, const bytecode_type_t bc)
             fprintf(f, "\t\t<op>INIT_OBJ_PROP %zu</op>\n", bc->op_codes[i]);
             break;
 
-        case BC_OP_GET_HEAP:
+        case BC_OP_CREATE_ARR:
             i++;
-            fprintf(f, "\t\t<op>GET_HEAP %zu", bc->op_codes[i]);
-            i++;
-            n = bc->op_codes[i];
-            i++;
-            for (j = 0; j < n; j++) {
-                fprintf(f, ".%zu", bc->op_codes[i]);
-                i++;
-            }
-            i--;
-            fprintf(f, "</op>\n");
-            break;
-        case BC_OP_SET_HEAP:
-            i++;            
-            fprintf(f, "\t\t<op>SET_HEAP %zu", bc->op_codes[i]);
-            i++;
-            n = bc->op_codes[i];
-            i++;
-            for (j = 0; j < n; j++) {
-                fprintf(f, ".%zu", bc->op_codes[i]);
-                i++;
-            }
-            i--;
-            fprintf(f, "</op>\n");
+            fprintf(f, "\t\t<op>CREATE_ARR %zu</op>\n", bc->op_codes[i]);
             break;
 
+        case BC_OP_GET_HEAP:
+        case BC_OP_SET_HEAP:
+            if (bc->op_codes[i] == BC_OP_GET_HEAP) {
+                i++;
+                fprintf(f, "\t\t<op>GET_HEAP %zu", bc->op_codes[i]);
+            } else if (bc->op_codes[i] == BC_OP_SET_HEAP) {
+                i++;
+                fprintf(f, "\t\t<op>SET_HEAP %zu", bc->op_codes[i]);
+            }
+
+            i++;
+            n = bc->op_codes[i];
+            i++;
+            for (j = 0; j < n; j++) {
+                if (bc->op_codes[i] == BC_OBJECT_FIELD) {
+                    i++;
+                    fprintf(f, " field(%zu)", bc->op_codes[i]);
+                } else if (bc->op_codes[i] == BC_ARRAY_INDEX) {
+                    i++;
+                    fprintf(f, " index(%zu)", bc->op_codes[i]);
+                }
+                i++;
+            }
+            i--;
+            fprintf(f, "</op>\n");
+            break;
         case BC_OP_LOGICAL_OR:
             fprintf(f, "\t\t<op>LOGICAL_OR</op>\n");
             break;

@@ -52,6 +52,8 @@ enum TOKEN_TYPE
     TOKEN_TYPE_WHILE,    /* while               */
     TOKEN_TYPE_BREAK,    /* break               */
     TOKEN_TYPE_CONTINUE, /* continue            */
+    TOKEN_TYPE_APPEND,   /* append              */
+    TOKEN_TYPE_DELETE,   /* delete              */
     TOKEN_TYPE_RETURN,   /* return              */
 
     TOKEN_TYPE_IDENT,    /* [a-z]([a-z]|[0-9])* */
@@ -76,7 +78,10 @@ enum TOKEN_TYPE
     TOKEN_TYPE_LPAREN,   /* (                   */
     TOKEN_TYPE_RPAREN,   /* )                   */
 
-    TOKEN_TYPE_NUMBER,   /* [0-9]*(.[0-9]*)?    */       
+    TOKEN_TYPE_NUMBER,   /* [0-9]*(.[0-9]*)?    */
+
+    TOKEN_TYPE_LBRACKET, /* [                   */
+    TOKEN_TYPE_RBRACKET, /* ]                   */    
     
     TOKEN_TYPE_LBRACE,   /* {                   */
     TOKEN_TYPE_RBRACE,   /* }                   */

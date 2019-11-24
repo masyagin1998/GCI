@@ -1,9 +1,9 @@
 unit                    = function_decl*
 
-function_decl           = FUNCTION IDENT formal_parameters_list body
+function_decl           = FUNCTION IDENT LPAREN formal_parameters_list RPAREN body |
+                          FUNCTION IDENT LPAREN RPAREN body
 
-formal_parameters_list  = LPAREN IDENT (COMMA IDENT)* RPAREN |
-                          LPAREN RPAREN
+formal_parameters_list  = IDENT (COMMA IDENT)* RPAREN
 
 body                    = LBRACE statement* RBRACE
 
@@ -35,12 +35,18 @@ continue_statement      = CONTINUE SEMI
 return_statement        = RETURN assignment_expr SEMI |
                           RETURN SEMI
 
-variable                = IDENT (DOT IDENT)*
+variable                = IDENT (variable_part)*
+variable_part           = DOT IDENT |
+                          LBRACKET logical_or_expr RBRACKET
 
-assignment_expr         = object_literal | logical_or_expr
+assignment_expr         = object_literal | array_literal | logical_or_expr
 
 object_literal          = LBRACE properties_list RBRACE |
                           LBRACE RBRACE
+
+array_literal           = LBRACKET args_list RBRACKET |
+                          LBRACKET RBRACKET
+
 properties_list         = property (COMMA property)*
 property                = IDENT COLON assignment_expr
 

@@ -14,8 +14,8 @@
         spaces_num -= 2;                        \
     } while(0)
 
-#define PUT_SPACES()                            \
-    do {                                        \
+#define PUT_SPACES()                                \
+    do {                                            \
         fprintf(f, "%*s", (int) spaces_num, "");    \
     } while(0)
 
@@ -30,10 +30,9 @@ struct UNIT_AST*create_unit_ast(struct FUNCTION_DECL_AST**functions, size_t func
 
 static void dump_function_decl_ast_to_file_inner(FILE*f, const struct FUNCTION_DECL_AST*ast, size_t spaces_num);
 
-void dump_unit_ast_to_xml_file(FILE*f, const struct UNIT_AST*ast)
+static void dump_unit_ast_to_xml_file_inner(FILE*f, const struct UNIT_AST*ast, size_t spaces_num)
 {
     size_t i;
-    size_t spaces_num = 0;
 
     fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");    
     fprintf(f, "<unit>\n");
@@ -43,6 +42,11 @@ void dump_unit_ast_to_xml_file(FILE*f, const struct UNIT_AST*ast)
     }
     DEC_SPACES_NUM();
     fprintf(f, "</unit>\n");    
+}
+
+__inline__ void dump_unit_ast_to_xml_file(FILE*f, const struct UNIT_AST*ast)
+{
+    return dump_unit_ast_to_xml_file_inner(f, ast, 0);
 }
 
 void unit_ast_free(struct UNIT_AST*ast)
@@ -81,19 +85,26 @@ static void dump_function_decl_ast_to_file_inner(FILE*f, const struct FUNCTION_D
     dump_ident_ast_to_file_inner(f, ast->function_name, spaces_num);
     DEC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "</function_name>\n");
-
-    dump_formal_parameters_list_ast_to_file_inner(f, ast->formal_parameters_list, spaces_num);
-    
+    if (ast->formal_parameters_list != NULL) {
+        dump_formal_parameters_list_ast_to_file_inner(f, ast->formal_parameters_list, spaces_num);
+    }
     dump_body_ast_to_file_inner(f, ast->body, spaces_num);
     DEC_SPACES_NUM();
 
     PUT_SPACES(); fprintf(f, "</function>\n");
 }
 
+__inline__ void dump_function_decl_ast_to_file(FILE*f, const struct FUNCTION_DECL_AST*ast)
+{
+    return dump_function_decl_ast_to_file_inner(f, ast, 0);
+}
+
 void function_decl_ast_free(struct FUNCTION_DECL_AST*ast)
 {
     ident_ast_free(ast->function_name);
-    formal_parameters_list_ast_free(ast->formal_parameters_list);
+    if (ast->formal_parameters_list != NULL) {
+        formal_parameters_list_ast_free(ast->formal_parameters_list);
+    }
     body_ast_free(ast->body);
     SAFE_FREE(ast);
 }
@@ -118,6 +129,11 @@ static void dump_formal_parameters_list_ast_to_file_inner(FILE*f, const struct F
     }
     DEC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "</formal_parameters_list>\n");
+}
+
+__inline__ void dump_formal_parameters_list_ast_to_file(FILE*f, const struct FORMAL_PARAMETERS_LIST_AST*ast)
+{
+    dump_formal_parameters_list_ast_to_file_inner(f, ast, 0);
 }
 
 void formal_parameters_list_ast_free(struct FORMAL_PARAMETERS_LIST_AST*ast)
@@ -152,6 +168,11 @@ static void dump_body_ast_to_file_inner(FILE*f, const struct BODY_AST*ast, size_
     }
     DEC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "</body>\n");
+}
+
+__inline__ void dump_body_ast_to_file(FILE*f, const struct BODY_AST*ast)
+{
+    dump_body_ast_to_file_inner(f, ast, 0);
 }
 
 void body_ast_free(struct BODY_AST*ast)
@@ -245,6 +266,11 @@ static void dump_stmt_ast_to_file_inner(FILE*f, const struct STMT_AST*ast, size_
     }
 }
 
+__inline__ void dump_stmt_ast_to_file(FILE*f, const struct STMT_AST*ast)
+{
+    dump_stmt_ast_to_file_inner(f, ast, 0);
+}
+
 void stmt_ast_free(struct STMT_AST*ast)
 {
     switch (ast->type) {
@@ -303,6 +329,11 @@ static void dump_decl_stmt_ast_to_file_inner(FILE*f, const struct DECL_STMT_AST*
     PUT_SPACES(); fprintf(f, "</decl_stmt>\n");
 }
 
+__inline__ void dump_decl_stmt_ast_to_file(FILE*f, const struct DECL_STMT_AST*ast)
+{
+    dump_decl_stmt_ast_to_file_inner(f, ast, 0);
+}
+
 void decl_stmt_ast_free(struct DECL_STMT_AST*ast)
 {
     ident_ast_free(ast->new_var_name);
@@ -333,6 +364,11 @@ static void dump_assign_stmt_ast_to_file_inner(FILE*f, const struct ASSIGN_STMT_
     PUT_SPACES(); fprintf(f, "</assign_stmt>\n");
 }
 
+__inline__ void dump_assign_stmt_ast_to_file(FILE*f, const struct ASSIGN_STMT_AST*ast)
+{
+    dump_assign_stmt_ast_to_file_inner(f, ast, 0);
+}
+
 void assign_stmt_ast_free(struct ASSIGN_STMT_AST*ast)
 {
     variable_ast_free(ast->var_name);
@@ -357,6 +393,11 @@ static void dump_function_call_stmt_ast_to_file_inner(FILE*f, const struct FUNCT
     dump_function_call_ast_to_file_inner(f, ast->function_call, spaces_num);
     DEC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "</function_call_stmt>\n");
+}
+
+__inline__ void dump_function_call_stmt_ast_to_file(FILE*f, const struct FUNCTION_CALL_STMT_AST*ast)
+{
+    dump_function_call_stmt_ast_to_file_inner(f, ast, 0);
 }
 
 void function_call_stmt_ast_free(struct FUNCTION_CALL_STMT_AST*ast)
@@ -408,6 +449,11 @@ static void dump_if_stmt_ast_to_file_inner(FILE*f, const struct IF_STMT_AST*ast,
     PUT_SPACES(); fprintf(f, "</if_stmt>\n");
 }
 
+__inline__ void dump_if_stmt_ast_to_file(FILE*f, const struct IF_STMT_AST*ast)
+{
+    dump_if_stmt_ast_to_file_inner(f, ast, 0);
+}
+
 void if_stmt_ast_free(struct IF_STMT_AST*ast)
 {
     logical_or_expr_ast_free(ast->condition);
@@ -443,6 +489,11 @@ static void dump_while_stmt_ast_to_file_inner(FILE*f, const struct WHILE_STMT_AS
     PUT_SPACES(); fprintf(f, "</while_stmt>\n");
 }
 
+__inline__ void dump_while_stmt_ast_to_file(FILE*f, const struct WHILE_STMT_AST*ast)
+{
+    dump_while_stmt_ast_to_file_inner(f, ast, 0);
+}
+
 void while_stmt_ast_free(struct WHILE_STMT_AST*ast)
 {
     logical_or_expr_ast_free(ast->condition);
@@ -462,6 +513,11 @@ static void dump_break_stmt_ast_to_file_inner(FILE*f, const struct BREAK_STMT_AS
     PUT_SPACES(); fprintf(f, "<break></break>\n");
 }
 
+__inline__ void dump_break_stmt_ast_to_file(FILE*f, const struct BREAK_STMT_AST*ast)
+{
+    dump_break_stmt_ast_to_file_inner(f, ast, 0);
+}
+
 void break_stmt_ast_free(struct BREAK_STMT_AST*ast)
 {
     SAFE_FREE(ast);
@@ -477,6 +533,11 @@ static void dump_continue_stmt_ast_to_file_inner(FILE*f, const struct CONTINUE_S
 {
     PREFIX_UNUSED(ast);
     PUT_SPACES(); fprintf(f, "<continue></continue>\n");
+}
+
+__inline__ void dump_continue_stmt_ast_to_file(FILE*f, const struct CONTINUE_STMT_AST*ast)
+{
+    dump_continue_stmt_ast_to_file_inner(f, ast, 0);
 }
 
 void continue_stmt_ast_free(struct CONTINUE_STMT_AST*ast)
@@ -503,6 +564,11 @@ static void dump_return_stmt_ast_to_file_inner(FILE*f, const struct RETURN_STMT_
     PUT_SPACES(); fprintf(f, "</return_stmt>\n");
 }
 
+__inline__ void dump_return_stmt_ast_to_file(FILE*f, const struct RETURN_STMT_AST*ast)
+{
+    dump_return_stmt_ast_to_file_inner(f, ast, 0);
+}
+
 void return_stmt_ast_free(struct RETURN_STMT_AST*ast)
 {
     if (ast->result != NULL) {
@@ -511,12 +577,79 @@ void return_stmt_ast_free(struct RETURN_STMT_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct VARIABLE_AST*create_variable_ast(struct IDENT_AST**idents, size_t idents_len)
+struct VARIABLE_PART_AST*create_variable_part_ast(void*variable_part_ptr, enum AST_VARIABLE_PART_TYPE type)
+{
+    struct VARIABLE_PART_AST*variable_part;
+    SAFE_MALLOC(variable_part, 1);
+    switch (type) {
+    case AST_VARIABLE_PART_TYPE_FIELD:
+        variable_part->field = variable_part_ptr;
+        break;
+    case AST_VARIABLE_PART_TYPE_INDEX:
+        variable_part->index = variable_part_ptr;
+        break;
+    default:
+        fprintf(stderr, "Invalid VARIABLE_EXPR_AST type: %d\n", type);
+        exit(EXIT_FAILURE);
+        break;        
+    }
+    variable_part->type = type;
+    return variable_part;
+}
+
+static void dump_variable_part_ast_to_file_inner(FILE*f, const struct VARIABLE_PART_AST*ast, size_t spaces_num)
+{
+    switch (ast->type) {
+    case AST_VARIABLE_PART_TYPE_FIELD:
+        PUT_SPACES(); fprintf(f, "<field>\n");
+        INC_SPACES_NUM();
+        dump_ident_ast_to_file_inner(f, ast->field, spaces_num);
+        DEC_SPACES_NUM();
+        PUT_SPACES(); fprintf(f, "</field>\n");
+        break;
+    case AST_VARIABLE_PART_TYPE_INDEX:
+        PUT_SPACES(); fprintf(f, "<index>\n");
+        INC_SPACES_NUM();
+        dump_logical_or_expr_ast_to_file_inner(f, ast->index, spaces_num);
+        DEC_SPACES_NUM();
+        PUT_SPACES(); fprintf(f, "</index>\n");
+        break;
+    default:
+        fprintf(stderr, "Invalid VARIABLE_PART_AST type: %d\n", ast->type);
+        exit(EXIT_FAILURE);
+        break;        
+    }
+}
+
+__inline__ void dump_variable_part_ast_to_file(FILE*f, const struct VARIABLE_PART_AST*ast)
+{
+    dump_variable_part_ast_to_file_inner(f, ast, 0);
+}
+
+void variable_part_ast_free(struct VARIABLE_PART_AST*ast)
+{
+    switch (ast->type) {
+    case AST_VARIABLE_PART_TYPE_FIELD:
+        ident_ast_free(ast->field);
+        break;
+    case AST_VARIABLE_PART_TYPE_INDEX:
+        logical_or_expr_ast_free(ast->index);
+        break;
+    default:
+        fprintf(stderr, "Invalid VARIABLE_PART_AST type: %d\n", ast->type);
+        exit(EXIT_FAILURE);
+        break;
+    }
+    SAFE_FREE(ast);
+}
+
+struct VARIABLE_AST*create_variable_ast(struct IDENT_AST*ident, struct VARIABLE_PART_AST**parts, size_t parts_len)
 {
     struct VARIABLE_AST*variable;
     SAFE_MALLOC(variable, 1);
-    variable->idents = idents;
-    variable->idents_len = idents_len;
+    variable->ident = ident;
+    variable->parts = parts;
+    variable->parts_len = parts_len;
     return variable;
 }
 
@@ -526,20 +659,27 @@ static void dump_variable_ast_to_file_inner(FILE*f, const struct VARIABLE_AST*as
     
     PUT_SPACES(); fprintf(f, "<variable>\n");
     INC_SPACES_NUM();
-    for (i = 0; i < ast->idents_len; i++) {
-        dump_ident_ast_to_file_inner(f, ast->idents[i], spaces_num);
+    dump_ident_ast_to_file_inner(f, ast->ident, spaces_num);
+    for (i = 0; i < ast->parts_len; i++) {
+        dump_variable_part_ast_to_file_inner(f, ast->parts[i], spaces_num);
     }
     DEC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "</variable>\n");
 }
 
+__inline__ void dump_variable_ast_to_file(FILE*f, const struct VARIABLE_AST*ast)
+{
+    dump_variable_ast_to_file_inner(f, ast, 0);
+}
+
 void variable_ast_free(struct VARIABLE_AST*ast)
 {
     size_t i;
-    for (i = 0; i < ast->idents_len; i++) {
-        ident_ast_free(ast->idents[i]);
+    ident_ast_free(ast->ident);
+    for (i = 0; i < ast->parts_len; i++) {
+        variable_part_ast_free(ast->parts[i]);
     }
-    SAFE_FREE(ast->idents);
+    SAFE_FREE(ast->parts);
     SAFE_FREE(ast);
 }
 
@@ -551,6 +691,9 @@ struct ASSIGNMENT_EXPR_AST*create_assignment_expr_ast(void*assignment_ptr, enum 
     case AST_ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
         assignment_expr->object_literal = assignment_ptr;
         break;
+    case AST_ASSIGNMENT_EXPR_TYPE_ARRAY_LITERAL:
+        assignment_expr->array_literal = assignment_ptr;
+        break;        
     case AST_ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
         assignment_expr->logical_or_expr = assignment_ptr;
         break;
@@ -565,12 +708,17 @@ struct ASSIGNMENT_EXPR_AST*create_assignment_expr_ast(void*assignment_ptr, enum 
 
 static void dump_object_literal_ast_to_file_inner(FILE*f, const struct OBJECT_LITERAL_AST*ast, size_t spaces_num);
 
+void dump_array_literal_ast_to_file_inner(FILE*f, const struct ARRAY_LITERAL_AST*ast, size_t spaces_num);
+
 static void dump_assignment_expr_ast_to_file_inner(FILE*f, const struct ASSIGNMENT_EXPR_AST*ast, size_t spaces_num)
 {
     switch (ast->type) {
     case AST_ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
         dump_object_literal_ast_to_file_inner(f, ast->object_literal, spaces_num);
         break;
+    case AST_ASSIGNMENT_EXPR_TYPE_ARRAY_LITERAL:
+        dump_array_literal_ast_to_file_inner(f, ast->array_literal, spaces_num);
+        break;        
     case AST_ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
         dump_logical_or_expr_ast_to_file_inner(f, ast->logical_or_expr, spaces_num);
         break;
@@ -581,12 +729,20 @@ static void dump_assignment_expr_ast_to_file_inner(FILE*f, const struct ASSIGNME
     }
 }
 
+__inline__ void dump_assignment_expr_ast_to_file(FILE*f, const struct ASSIGNMENT_EXPR_AST*ast)
+{
+    dump_assignment_expr_ast_to_file_inner(f, ast, 0);
+}
+
 void assignment_expr_ast_free(struct ASSIGNMENT_EXPR_AST*ast)
 {
     switch (ast->type) {
     case AST_ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
         object_literal_ast_free(ast->object_literal);
         break;
+    case AST_ASSIGNMENT_EXPR_TYPE_ARRAY_LITERAL:
+        array_literal_ast_free(ast->array_literal);
+        break;        
     case AST_ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
         logical_or_expr_ast_free(ast->logical_or_expr);
         break;
@@ -620,6 +776,11 @@ static void dump_object_literal_ast_to_file_inner(FILE*f, const struct OBJECT_LI
     }
     DEC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "</object_literal>\n");
+}
+
+__inline__ void dump_object_literal_ast_to_file(FILE*f, const struct OBJECT_LITERAL_AST*ast)
+{
+    dump_object_literal_ast_to_file_inner(f, ast, 0);
 }
 
 void object_literal_ast_free(struct OBJECT_LITERAL_AST*ast)
@@ -660,10 +821,49 @@ static void dump_property_ast_to_file_inner(FILE*f, const struct PROPERTY_AST*as
     PUT_SPACES(); fprintf(f, "</property>\n");
 }
 
+__inline__ void dump_property_ast_to_file(FILE*f, const struct PROPERTY_AST*ast)
+{
+    dump_property_ast_to_file_inner(f, ast, 0);
+}
+
 void property_ast_free(struct PROPERTY_AST*ast)
 {
     ident_ast_free(ast->key);
     assignment_expr_ast_free(ast->value);
+    SAFE_FREE(ast);
+}
+
+struct ARRAY_LITERAL_AST*create_array_literal_ast(struct ARGS_LIST_AST*args_list)
+{
+    struct ARRAY_LITERAL_AST*array_literal;
+    SAFE_MALLOC(array_literal, 1);
+    array_literal->args_list = args_list;
+    return array_literal;
+}
+
+static void dump_args_list_ast_to_file_inner(FILE*f, const struct ARGS_LIST_AST*ast, size_t spaces_num);
+
+void dump_array_literal_ast_to_file_inner(FILE*f, const struct ARRAY_LITERAL_AST*ast, size_t spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<array_literal>\n");
+    INC_SPACES_NUM();
+    if (ast->args_list != NULL) {
+        dump_args_list_ast_to_file_inner(f, ast->args_list, spaces_num);
+    }
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</array_literal>\n");
+}
+
+__inline__ void dump_array_literal_ast_to_file(FILE*f, const struct ARRAY_LITERAL_AST*ast)
+{
+    dump_array_literal_ast_to_file_inner(f, ast, 0);
+}
+
+void array_literal_ast_free(struct ARRAY_LITERAL_AST*ast)
+{
+    if (ast->args_list != NULL) {
+        args_list_ast_free(ast->args_list);
+    }
     SAFE_FREE(ast);
 }
 
@@ -695,6 +895,11 @@ static void dump_logical_or_expr_ast_to_file_inner(FILE*f, const struct LOGICAL_
         DEC_SPACES_NUM();
         PUT_SPACES(); fprintf(f, "</logical_or_expr>\n");        
     }
+}
+
+__inline__ void dump_logical_or_expr_ast_to_file(FILE*f, const struct LOGICAL_OR_EXPR_AST*ast)
+{
+    dump_logical_or_expr_ast_to_file_inner(f, ast, 0);
 }
 
 void logical_or_expr_ast_free(struct LOGICAL_OR_EXPR_AST*ast)
@@ -735,6 +940,11 @@ static void dump_logical_and_expr_ast_to_file_inner(FILE*f, const struct LOGICAL
         DEC_SPACES_NUM();
         PUT_SPACES(); fprintf(f, "</logical_and_expr>\n");        
     }
+}
+
+__inline__ void dump_logical_and_expr_ast_to_file(FILE*f, const struct LOGICAL_AND_EXPR_AST*ast)
+{
+    dump_logical_and_expr_ast_to_file_inner(f, ast, 0);
 }
 
 void logical_and_expr_ast_free(struct LOGICAL_AND_EXPR_AST*ast)
@@ -778,6 +988,11 @@ static void dump_eq_expr_ast_to_file_inner(FILE*f, const struct EQ_EXPR_AST*ast,
         DEC_SPACES_NUM();
         PUT_SPACES(); fprintf(f, "</eq_expr>\n");
     }
+}
+
+__inline__ void dump_eq_expr_ast_to_file(FILE*f, const struct EQ_EXPR_AST*ast)
+{
+    dump_eq_expr_ast_to_file_inner(f, ast, 0);
 }
 
 void eq_expr_ast_free(struct EQ_EXPR_AST*ast)
@@ -826,6 +1041,11 @@ static void dump_relational_expr_ast_to_file_inner(FILE*f, const struct RELATION
     }
 }
 
+__inline__ void dump_relational_expr_ast_to_file(FILE*f, const struct RELATIONAL_EXPR_AST*ast)
+{
+    dump_relational_expr_ast_to_file_inner(f, ast, 0);
+}
+
 void relational_expr_ast_free(struct RELATIONAL_EXPR_AST*ast)
 {
     additive_expr_ast_free(ast->left);
@@ -845,17 +1065,6 @@ struct ADDITIVE_EXPR_AST*create_additive_expr_ast(struct MULTIPLICATIVE_EXPR_AST
     additive_expr->ops = ops;
     additive_expr->muls_len = muls_len;
     return additive_expr;
-}
-
-void additive_expr_ast_free(struct ADDITIVE_EXPR_AST*ast)
-{
-    size_t i;
-    for (i = 0; i < ast->muls_len; i++) {
-        multiplicative_expr_ast_free(ast->muls[i]);
-    }
-    SAFE_FREE(ast->muls);
-    SAFE_FREE(ast->ops);
-    SAFE_FREE(ast);
 }
 
 static void dump_multiplicative_expr_ast_to_file_inner(FILE*f, const struct MULTIPLICATIVE_EXPR_AST*ast, size_t spaces_num);
@@ -881,6 +1090,22 @@ static void dump_additive_expr_ast_to_file_inner(FILE*f, const struct ADDITIVE_E
         DEC_SPACES_NUM();
         PUT_SPACES(); fprintf(f, "</additive_expr>\n");        
     }
+}
+
+__inline__ void dump_additive_expr_ast_to_file(FILE*f, const struct ADDITIVE_EXPR_AST*ast)
+{
+    dump_additive_expr_ast_to_file_inner(f, ast, 0);
+}
+
+void additive_expr_ast_free(struct ADDITIVE_EXPR_AST*ast)
+{
+    size_t i;
+    for (i = 0; i < ast->muls_len; i++) {
+        multiplicative_expr_ast_free(ast->muls[i]);
+    }
+    SAFE_FREE(ast->muls);
+    SAFE_FREE(ast->ops);
+    SAFE_FREE(ast);
 }
 
 struct MULTIPLICATIVE_EXPR_AST*create_multiplicative_expr_ast(struct LEFT_UNARY_EXPR_AST**lues,
@@ -922,6 +1147,11 @@ static void dump_multiplicative_expr_ast_to_file_inner(FILE*f, const struct MULT
     }
 }
 
+__inline__ void dump_multiplicative_expr_ast_to_file(FILE*f, const struct MULTIPLICATIVE_EXPR_AST*ast)
+{
+    dump_multiplicative_expr_ast_to_file_inner(f, ast, 0);
+}
+
 void multiplicative_expr_ast_free(struct MULTIPLICATIVE_EXPR_AST*ast)
 {
     size_t i;
@@ -956,6 +1186,11 @@ static void dump_left_unary_expr_ast_to_file_inner(FILE*f, const struct LEFT_UNA
     } else {
         dump_primary_expr_ast_to_file_inner(f, ast->expr, spaces_num);
     }
+}
+
+__inline__ void dump_left_unary_expr_ast_to_file(FILE*f, const struct LEFT_UNARY_EXPR_AST*ast)
+{
+    dump_left_unary_expr_ast_to_file_inner(f, ast, 0);
 }
 
 void left_unary_expr_ast_free(struct LEFT_UNARY_EXPR_AST*ast)
@@ -1014,6 +1249,11 @@ static void dump_primary_expr_ast_to_file_inner(FILE*f, const struct PRIMARY_EXP
     }
 }
 
+__inline__ void dump_primary_expr_ast_to_file(FILE*f, const struct PRIMARY_EXPR_AST*ast)
+{
+    dump_primary_expr_ast_to_file_inner(f, ast, 0);
+}
+
 void primary_expr_ast_free(struct PRIMARY_EXPR_AST*ast)
 {
     switch (ast->type) {
@@ -1046,8 +1286,6 @@ struct FUNCTION_CALL_AST*create_function_call_ast(struct IDENT_AST*function_name
     return function_call;
 }
 
-static void dump_args_list_ast_to_file_inner(FILE*f, const struct ARGS_LIST_AST*ast, size_t spaces_num);
-
 static void dump_function_call_ast_to_file_inner(FILE*f, const struct FUNCTION_CALL_AST*ast, size_t spaces_num)
 {
     PUT_SPACES(); fprintf(f, "<function_call>\n");
@@ -1057,17 +1295,24 @@ static void dump_function_call_ast_to_file_inner(FILE*f, const struct FUNCTION_C
     dump_ident_ast_to_file_inner(f, ast->function_name, spaces_num);
     DEC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "</function_name>\n");
-    
-    dump_args_list_ast_to_file_inner(f, ast->args_list, spaces_num);
-    
+    if (ast->args_list != NULL) {
+        dump_args_list_ast_to_file_inner(f, ast->args_list, spaces_num);
+    }
     DEC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "</function_call>\n");
+}
+
+__inline__ void dump_function_call_ast_to_file(FILE*f, const struct FUNCTION_CALL_AST*ast)
+{
+    dump_function_call_ast_to_file_inner(f, ast, 0);
 }
 
 void function_call_ast_free(struct FUNCTION_CALL_AST*ast)
 {
     ident_ast_free(ast->function_name);
-    args_list_ast_free(ast->args_list);
+    if (ast->args_list != NULL) {
+        args_list_ast_free(ast->args_list);
+    }
     SAFE_FREE(ast);
 }
 
@@ -1093,6 +1338,11 @@ static void dump_args_list_ast_to_file_inner(FILE*f, const struct ARGS_LIST_AST*
     PUT_SPACES(); fprintf(f, "</args_list>\n");
 }
 
+__inline__ void dump_args_list_ast_to_file(FILE*f, const struct ARGS_LIST_AST*ast)
+{
+    dump_args_list_ast_to_file_inner(f, ast, 0);
+}
+
 void args_list_ast_free(struct ARGS_LIST_AST*ast)
 {
     size_t i;
@@ -1116,6 +1366,11 @@ static void dump_ident_ast_to_file_inner(FILE*f, const struct IDENT_AST*ast, siz
     PUT_SPACES(); fprintf(f, "<ident>%s</ident>\n", ast->ident);
 }
 
+__inline__ void dump_ident_ast_to_file(FILE*f, const struct IDENT_AST*ast)
+{
+    dump_ident_ast_to_file_inner(f, ast, 0);
+}
+
 void ident_ast_free(struct IDENT_AST*ast)
 {
     SAFE_FREE(ast);
@@ -1132,6 +1387,11 @@ struct NUMBER_AST*create_number_ast(long long number)
 static void dump_number_ast_to_file_inner(FILE*f, const struct NUMBER_AST*ast, size_t spaces_num)
 {
     PUT_SPACES(); fprintf(f, "<number>%lld</number>\n", ast->number);
+}
+
+__inline__ void dump_number_ast_to_file(FILE*f, const struct NUMBER_AST*ast)
+{
+    dump_number_ast_to_file_inner(f, ast, 0);
 }
 
 void number_ast_free(struct NUMBER_AST*ast)

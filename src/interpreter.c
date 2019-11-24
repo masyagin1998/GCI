@@ -139,7 +139,7 @@ void print_bytecode_result(const char*fname, const bytecode_type_t bc)
 }
 
 #define STACK_SIZE 1024
-#define HEAP_SIZE  35
+#define HEAP_SIZE  1000000
 
 int main(int argc, char**argv)
 {
@@ -189,14 +189,15 @@ int main(int argc, char**argv)
 
     bc_gen = create_bytecode_generator();
     bytecode_generator_conf(bc_gen, unit);
-
-    unit_ast_free(unit);
     
     r = bytecode_generator_generate(bc_gen, &bc);
     if (r != BYTECODE_GENERATOR_OK) {
+        unit_ast_free(unit);
         bytecode_generator_free(bc_gen);
         return 2;
     }
+
+    unit_ast_free(unit);
 
     if (params.mode == INTERPRETER_BC) {
         print_bytecode_result(params.out, bc);
