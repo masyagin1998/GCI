@@ -176,41 +176,73 @@ void virtual_machine_run(virtual_machine_type_t vm)
         }
             
         case BC_OP_SET_HEAP: {
-            size_t i, j;
+            size_t i, j, k;
             size_t idx = READ_BYTE();
             size_t len = READ_BYTE();
+            size_t pops = 0;
             struct VALUE val = vm->stack[idx];
             for (i = 0; i < len; i++) {
-                size_t tmp = READ_BYTE();
-                size_t key = READ_BYTE();
-                size_t found = 0;
-                for (j = 0; j < val.obj_val->properties_len; j++) {
-                    if (val.obj_val->properties[j].key == key) {
-                        if (i < len - 1) {
-                            val = val.obj_val->properties[j].val;
-                            found = 1;
-                            break;
-                        } else if (i == len - 1) {
-                            val.obj_val->properties[j].val = virtual_machine_stack_pop(vm);
-                            found = 1;
-                            break;                            
+                enum BC_HEAP_OP hop = READ_BYTE();
+                if (hop == BC_ARRAY_INDEX) {
+                    pops++;
+                    size_t offset = READ_BYTE();
+                    struct VALUE index = *(vm->stack_top - offset - 1);
+                    if (index.int_val < 0) {
+                        printf("invalid array index: %lld\n", index.int_val);
+                        exit(1);
+                    }
+                    if ((size_t) index.int_val > val.arr_val->len) {
+                        printf("array index to unitialized data: %lld\n", index.int_val);
+                        exit(1);
+                    }
+                    if (i < len - 1) {
+                        val = val.arr_val->values[index.int_val];
+                    } else if (i == len - 1) {
+                        for (k = 0; k < pops; k++) {
+                            virtual_machine_stack_pop(vm);
+                        }
+
+                        val.arr_val->values[index.int_val] = virtual_machine_stack_pop(vm);
+                    }
+                } else if (hop == BC_OBJECT_FIELD) {
+                    size_t key = READ_BYTE();
+                    size_t found = 0;
+                    for (j = 0; j < val.obj_val->properties_len; j++) {
+                        if (val.obj_val->properties[j].key == key) {
+                            if (i < len - 1) {
+                                val = val.obj_val->properties[j].val;
+                                found = 1;
+                                break;
+                            } else if (i == len - 1) {
+                                for (k = 0; k < pops; k++) {
+                                    virtual_machine_stack_pop(vm);
+                                }
+                                
+                                val.obj_val->properties[j].val = virtual_machine_stack_pop(vm);
+                                found = 1;
+                                break;                            
+                            }
                         }
                     }
-                }
-                if (!found) {
-                    if (i < len - 1) {
-                        printf("need to create to many fields\n");
-                        exit(1);
-                    } else {
-                        if (val.obj_val->properties_len == val.obj_val->properties_cap) {
-                            val.obj_val = garbage_collector_realloc_obj(vm->gc, val.obj_val, val.obj_val->properties_len + 1);
-                            val.obj_val->properties_len++;
-                            val.obj_val->properties[j].key = key;
-                            val.obj_val->properties[j].val = virtual_machine_stack_pop(vm);
+                    if (!found) {
+                        for (k = 0; k < pops; k++) {
+                            virtual_machine_stack_pop(vm);
+                        }
+                        
+                        if (i < len - 1) {
+                            printf("need to create to many fields\n");
+                            exit(1);
                         } else {
-                            val.obj_val->properties_len++;
-                            val.obj_val->properties[j].key = key;
-                            val.obj_val->properties[j].val = virtual_machine_stack_pop(vm);
+                            if (val.obj_val->properties_len == val.obj_val->properties_cap) {
+                                val.obj_val = garbage_collector_realloc_obj(vm->gc, val.obj_val, val.obj_val->properties_len + 1);
+                                val.obj_val->properties_len++;
+                                val.obj_val->properties[j].key = key;
+                                val.obj_val->properties[j].val = virtual_machine_stack_pop(vm);
+                            } else {
+                                val.obj_val->properties_len++;
+                                val.obj_val->properties[j].key = key;
+                                val.obj_val->properties[j].val = virtual_machine_stack_pop(vm);
+                            }
                         }
                     }
                 }
@@ -228,9 +260,7 @@ void virtual_machine_run(virtual_machine_type_t vm)
                 if (hop == BC_ARRAY_INDEX) {
                     pops++;
                     size_t offset = READ_BYTE();
-                    printf("offset: %lu\n", offset);
                     struct VALUE index = *(vm->stack_top - offset - 1);
-                    printf("type: %d\n", index.type == VALUE_TYPE_INTEGER);
                     if (index.int_val < 0) {
                         printf("invalid array index: %lld\n", index.int_val);
                         exit(1);
