@@ -51,7 +51,9 @@ static enum PARSER_CODES ident_ast_read(struct PARSER*parser, struct IDENT_AST**
         goto err0;
     }
     
-    (*ident) = create_ident_ast((parser->tok)->str_val);
+    (*ident) = create_ident_ast((parser->tok)->str_val,
+                                (parser->tok)->frag.starting.line,
+                                (parser->tok)->frag.starting.pos);
 
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
@@ -142,7 +144,9 @@ static enum PARSER_CODES variable_ast_read(struct PARSER*parser, struct VARIABLE
         PUSH_BACK(parts, part);
     }
 
-    (*variable) = create_variable_ast(ident, parts, parts_len);
+    (*variable) = create_variable_ast(ident, parts, parts_len,
+                                      (parser->tok)->frag.starting.line,
+                                      (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -187,7 +191,9 @@ static enum PARSER_CODES formal_parameters_list_ast_read(struct PARSER*parser, s
         PUSH_BACK(idents, ident);            
     }
 
-    (*formal_parameters_list) = create_formal_parameters_list_ast(idents, idents_len);
+    (*formal_parameters_list) = create_formal_parameters_list_ast(idents, idents_len,
+                                                                  (parser->tok)->frag.starting.line,
+                                                                  (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -215,7 +221,9 @@ static enum PARSER_CODES number_ast_read(struct PARSER*parser, struct NUMBER_AST
         set_parser_error(parser, 1, TOKEN_TYPE_NUMBER);
         goto err0;
     }    
-    (*number) = create_number_ast((parser->tok)->int_val);
+    (*number) = create_number_ast((parser->tok)->int_val,
+                                  (parser->tok)->frag.starting.line,
+                                  (parser->tok)->frag.starting.pos);
 
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
@@ -255,7 +263,9 @@ static enum PARSER_CODES args_list_ast_read(struct PARSER*parser, struct ARGS_LI
         PUSH_BACK(assignment_exprs, assignment_expr);    
     }
 
-    (*args_list) = create_args_list_ast(assignment_exprs, assignment_exprs_len);
+    (*args_list) = create_args_list_ast(assignment_exprs, assignment_exprs_len,
+                                        (parser->tok)->frag.starting.line,
+                                        (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -301,7 +311,9 @@ static enum PARSER_CODES function_call_ast_read(struct PARSER*parser, struct FUN
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));    
     
-    (*function_call) = create_function_call_ast(function_name, args_list);
+    (*function_call) = create_function_call_ast(function_name, args_list,
+                                                (parser->tok)->frag.starting.line,
+                                                (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -320,7 +332,9 @@ static enum PARSER_CODES primary_expr_ast_read(struct PARSER*parser, struct PRIM
 
     switch ((parser->tok)->token_type) {
     case TOKEN_TYPE_IDENT: {
-        struct IDENT_AST*ident = create_ident_ast((parser->tok)->str_val);
+        struct IDENT_AST*ident = create_ident_ast((parser->tok)->str_val,
+                                                  (parser->tok)->frag.starting.line,
+                                                  (parser->tok)->frag.starting.pos);
         token_free((parser->tok));
         lexer_next_token(parser->lexer, &(parser->tok));
 
@@ -428,7 +442,9 @@ static enum PARSER_CODES left_unary_expr_ast_read(struct PARSER*parser, struct L
         goto err0;
     }
 
-    (*left_unary_expr) = create_left_unary_expr_ast(op, primary_expr);
+    (*left_unary_expr) = create_left_unary_expr_ast(op, primary_expr,
+                                                    (parser->tok)->frag.starting.line,
+                                                    (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -478,7 +494,9 @@ static enum PARSER_CODES multiplicative_expr_ast_read(struct PARSER*parser, stru
         PUSH_BACK(left_unary_exprs, left_unary_expr);
     }
 
-    (*multiplicative_expr) = create_multiplicative_expr_ast(left_unary_exprs, ops, left_unary_exprs_len);
+    (*multiplicative_expr) = create_multiplicative_expr_ast(left_unary_exprs, ops, left_unary_exprs_len,
+                                                            (parser->tok)->frag.starting.line,
+                                                            (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -537,7 +555,9 @@ static enum PARSER_CODES additive_expr_ast_read(struct PARSER*parser, struct ADD
         PUSH_BACK(multiplicative_exprs, multiplicative_expr);
     }
 
-    (*additive_expr) = create_additive_expr_ast(multiplicative_exprs, ops, multiplicative_exprs_len);
+    (*additive_expr) = create_additive_expr_ast(multiplicative_exprs, ops, multiplicative_exprs_len,
+                                                (parser->tok)->frag.starting.line,
+                                                (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -588,7 +608,9 @@ static enum PARSER_CODES relational_expr_ast_read(struct PARSER*parser, struct R
         }
     }
 
-    (*relational_expr) = create_relational_expr_ast(left, rel_op, right);
+    (*relational_expr) = create_relational_expr_ast(left, rel_op, right,
+                                                    (parser->tok)->frag.starting.line,
+                                                    (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -628,7 +650,9 @@ static enum PARSER_CODES eq_expr_ast_read(struct PARSER*parser, struct EQ_EXPR_A
         }
     }
 
-    (*eq_expr) = create_eq_expr_ast(left, eq_op, right);
+    (*eq_expr) = create_eq_expr_ast(left, eq_op, right,
+                                    (parser->tok)->frag.starting.line,
+                                    (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -669,7 +693,9 @@ static enum PARSER_CODES logical_and_expr_ast_read(struct PARSER*parser, struct 
         PUSH_BACK(eq_exprs, eq_expr);
     }
 
-    (*logical_and_expr) = create_logical_and_expr_ast(eq_exprs, eq_exprs_len);
+    (*logical_and_expr) = create_logical_and_expr_ast(eq_exprs, eq_exprs_len,
+                                                      (parser->tok)->frag.starting.line,
+                                                      (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -716,7 +742,9 @@ static enum PARSER_CODES logical_or_expr_ast_read(struct PARSER*parser, struct L
         PUSH_BACK(logical_and_exprs, logical_and_expr);
     }
 
-    (*logical_or_expr) = create_logical_or_expr_ast(logical_and_exprs, logical_and_exprs_len);
+    (*logical_or_expr) = create_logical_or_expr_ast(logical_and_exprs, logical_and_exprs_len,
+                                                    (parser->tok)->frag.starting.line,
+                                                    (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -757,7 +785,9 @@ static enum PARSER_CODES property_ast_read(struct PARSER*parser, struct PROPERTY
         goto err1;
     }
 
-    (*property) = create_property_ast(ident, assignment_expr);
+    (*property) = create_property_ast(ident, assignment_expr,
+                                      (parser->tok)->frag.starting.line,
+                                      (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -807,7 +837,9 @@ static enum PARSER_CODES object_literal_ast_read(struct PARSER*parser, struct OB
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
-    (*object_literal) = create_object_literal_ast(properties, properties_len);
+    (*object_literal) = create_object_literal_ast(properties, properties_len,
+                                                  (parser->tok)->frag.starting.line,
+                                                  (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -853,7 +885,9 @@ static enum PARSER_CODES array_literal_ast_read(struct PARSER*parser, struct ARR
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));    
     
-    (*array_literal) = create_array_literal_ast(args_list);
+    (*array_literal) = create_array_literal_ast(args_list,
+                                                (parser->tok)->frag.starting.line,
+                                                (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -946,7 +980,9 @@ static enum PARSER_CODES decl_stmt_ast_read(struct PARSER*parser, struct DECL_ST
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
-    (*decl_stmt) = create_decl_stmt_ast(var_name, assignment_expr);
+    (*decl_stmt) = create_decl_stmt_ast(var_name, assignment_expr,
+                                        (parser->tok)->frag.starting.line,
+                                        (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -1010,7 +1046,9 @@ static enum PARSER_CODES if_stmt_ast_read(struct PARSER*parser, struct IF_STMT_A
     }
 
     if ((parser->tok)->token_type != TOKEN_TYPE_ELSE) {
-        (*if_stmt) = create_if_stmt_ast(condition, if_body, NULL);
+        (*if_stmt) = create_if_stmt_ast(condition, if_body, NULL,
+                                        (parser->tok)->frag.starting.line,
+                                        (parser->tok)->frag.starting.pos);
         return PARSER_OK;
     }
     token_free((parser->tok));
@@ -1021,7 +1059,9 @@ static enum PARSER_CODES if_stmt_ast_read(struct PARSER*parser, struct IF_STMT_A
         if (r != PARSER_OK) {
             goto err2;
         }
-        (*if_stmt) = create_if_stmt_ast(condition, if_body, else_body);
+        (*if_stmt) = create_if_stmt_ast(condition, if_body, else_body,
+                                        (parser->tok)->frag.starting.line,
+                                        (parser->tok)->frag.starting.pos);
         return PARSER_OK;
     } else if ((parser->tok)->token_type == TOKEN_TYPE_IF) {
         struct STMT_AST**stmts = NULL;
@@ -1037,9 +1077,13 @@ static enum PARSER_CODES if_stmt_ast_read(struct PARSER*parser, struct IF_STMT_A
 
         stmt = create_stmt_ast(if_stmt_inner, AST_STMT_TYPE_IF);
         PUSH_BACK(stmts, stmt);
-        else_body = create_body_ast(stmts, stmts_len);
+        else_body = create_body_ast(stmts, stmts_len,
+                                    (parser->tok)->frag.starting.line,
+                                    (parser->tok)->frag.starting.pos);
 
-        (*if_stmt) = create_if_stmt_ast(condition, if_body, else_body);
+        (*if_stmt) = create_if_stmt_ast(condition, if_body, else_body,
+                                        (parser->tok)->frag.starting.line,
+                                        (parser->tok)->frag.starting.pos);
 
         return PARSER_OK;
     }
@@ -1092,7 +1136,9 @@ static enum PARSER_CODES while_stmt_ast_read(struct PARSER*parser, struct WHILE_
         goto err1;
     }
 
-    (*while_stmt) = create_while_stmt_ast(condition, body);
+    (*while_stmt) = create_while_stmt_ast(condition, body,
+                                          (parser->tok)->frag.starting.line,
+                                          (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -1123,7 +1169,8 @@ static enum PARSER_CODES break_stmt_ast_read(struct PARSER*parser, struct BREAK_
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
-    (*break_stmt) = create_break_stmt_ast();
+    (*break_stmt) = create_break_stmt_ast((parser->tok)->frag.starting.line,
+                                          (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -1152,7 +1199,8 @@ static enum PARSER_CODES continue_stmt_ast_read(struct PARSER*parser, struct CON
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
-    (*continue_stmt) = create_continue_stmt_ast();
+    (*continue_stmt) = create_continue_stmt_ast((parser->tok)->frag.starting.line,
+                                                (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -1189,7 +1237,9 @@ static enum PARSER_CODES return_stmt_ast_read(struct PARSER*parser, struct RETUR
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
-    (*return_stmt) = create_return_stmt_ast(assignment_expr);
+    (*return_stmt) = create_return_stmt_ast(assignment_expr,
+                                            (parser->tok)->frag.starting.line,
+                                            (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -1217,7 +1267,9 @@ static enum PARSER_CODES stmt_ast_read(struct PARSER*parser, struct STMT_AST**st
         break;
     }
     case TOKEN_TYPE_IDENT: {
-        struct IDENT_AST*ident = create_ident_ast((parser->tok)->str_val);
+        struct IDENT_AST*ident = create_ident_ast((parser->tok)->str_val,
+                                                  (parser->tok)->frag.starting.line,
+                                                  (parser->tok)->frag.starting.pos);
         token_free((parser->tok));
         lexer_next_token(parser->lexer, &(parser->tok));
         /* check, if name is part of variable or name is function name. */
@@ -1232,7 +1284,9 @@ static enum PARSER_CODES stmt_ast_read(struct PARSER*parser, struct STMT_AST**st
                 goto err0;
             }
 
-            function_call_stmt = create_function_call_stmt_ast(function_call);
+            function_call_stmt = create_function_call_stmt_ast(function_call,
+                                                               (parser->tok)->frag.starting.line,
+                                                               (parser->tok)->frag.starting.pos);
             (*stmt) = create_stmt_ast(function_call_stmt, AST_STMT_TYPE_FUNCTION_CALL);
             break;
         }
@@ -1265,12 +1319,15 @@ static enum PARSER_CODES stmt_ast_read(struct PARSER*parser, struct STMT_AST**st
                 goto err0;
             }
 
-            assign_stmt = create_assign_stmt_ast(var_name, assignment_expr);
+            assign_stmt = create_assign_stmt_ast(var_name, assignment_expr,
+                                                 (parser->tok)->frag.starting.line,
+                                                 (parser->tok)->frag.starting.pos);
             (*stmt) = create_stmt_ast(assign_stmt, AST_STMT_TYPE_ASSIGN);
         }
         }
 
         if ((parser->tok)->token_type != TOKEN_TYPE_SEMI) {
+            stmt_ast_free(*stmt);
             r = PARSER_INVALID_TOKEN;
             set_parser_error(parser, 1, TOKEN_TYPE_SEMI);
             goto err0;
@@ -1374,7 +1431,9 @@ static enum PARSER_CODES body_ast_read(struct PARSER*parser, struct BODY_AST**bo
     token_free((parser->tok));
     lexer_next_token(parser->lexer, &(parser->tok));
 
-    (*body) = create_body_ast(stmts, stmts_len);
+    (*body) = create_body_ast(stmts, stmts_len,
+                              (parser->tok)->frag.starting.line,
+                              (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -1439,7 +1498,9 @@ static enum PARSER_CODES function_decl_ast_read(struct PARSER*parser, struct FUN
         goto err2;
     }
 
-    (*function) = create_function_decl_ast(function_name, formal_parameters_list, body);
+    (*function) = create_function_decl_ast(function_name, formal_parameters_list, body,
+                                           (parser->tok)->frag.starting.line,
+                                           (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
 
@@ -1471,7 +1532,9 @@ static enum PARSER_CODES unit_ast_read(struct PARSER*parser, struct UNIT_AST**un
         PUSH_BACK(functions, function);
     }
 
-    (*unit) = create_unit_ast(functions, functions_len);
+    (*unit) = create_unit_ast(functions, functions_len,
+                              (parser->tok)->frag.starting.line,
+                              (parser->tok)->frag.starting.pos);
 
     return PARSER_OK;
     

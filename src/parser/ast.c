@@ -19,12 +19,17 @@
         fprintf(f, "%*s", (int) spaces_num, "");    \
     } while(0)
 
-struct UNIT_AST*create_unit_ast(struct FUNCTION_DECL_AST**functions, size_t functions_len)
+struct UNIT_AST*create_unit_ast(struct FUNCTION_DECL_AST**functions, size_t functions_len,
+                                size_t line, size_t pos)
 {
     struct UNIT_AST*unit_ast;
     SAFE_MALLOC(unit_ast, 1);
     unit_ast->functions = functions;
     unit_ast->functions_len = functions_len;
+    
+    unit_ast->line = line;
+    unit_ast->pos = pos;
+    
     return unit_ast;
 }
 
@@ -61,13 +66,18 @@ void unit_ast_free(struct UNIT_AST*ast)
 
 struct FUNCTION_DECL_AST*create_function_decl_ast(struct IDENT_AST*function_name,
                                                   struct FORMAL_PARAMETERS_LIST_AST*formal_parameters_list,
-                                                  struct BODY_AST*body)
+                                                  struct BODY_AST*body,
+                                                  size_t line, size_t pos)
 {
     struct FUNCTION_DECL_AST*function_ast;
     SAFE_MALLOC(function_ast, 1);
     function_ast->function_name = function_name;
     function_ast->formal_parameters_list = formal_parameters_list;
     function_ast->body = body;
+
+    function_ast->line = line;
+    function_ast->pos = pos;
+    
     return function_ast;
 }
 
@@ -77,10 +87,10 @@ static void dump_body_ast_to_file_inner(FILE*f, const struct BODY_AST*ast, size_
 
 static void dump_function_decl_ast_to_file_inner(FILE*f, const struct FUNCTION_DECL_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<function>\n");
+    PUT_SPACES(); fprintf(f, "<function line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
 
     INC_SPACES_NUM();
-    PUT_SPACES(); fprintf(f, "<function_name>\n");
+    PUT_SPACES(); fprintf(f, "<function_name line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     dump_ident_ast_to_file_inner(f, ast->function_name, spaces_num);
     DEC_SPACES_NUM();
@@ -109,12 +119,17 @@ void function_decl_ast_free(struct FUNCTION_DECL_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct FORMAL_PARAMETERS_LIST_AST*create_formal_parameters_list_ast(struct IDENT_AST**params, size_t params_len)
+struct FORMAL_PARAMETERS_LIST_AST*create_formal_parameters_list_ast(struct IDENT_AST**params, size_t params_len,
+                                                                    size_t line, size_t pos)
 {
     struct FORMAL_PARAMETERS_LIST_AST*formal_parameters_list;
     SAFE_MALLOC(formal_parameters_list, 1);
     formal_parameters_list->params = params;
     formal_parameters_list->params_len = params_len;
+
+    formal_parameters_list->line = line;
+    formal_parameters_list->pos = pos;
+    
     return formal_parameters_list;
 }
 
@@ -122,7 +137,7 @@ static void dump_formal_parameters_list_ast_to_file_inner(FILE*f, const struct F
 {
     size_t i;
     
-    PUT_SPACES(); fprintf(f, "<formal_parameters_list>\n");
+    PUT_SPACES(); fprintf(f, "<formal_parameters_list line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     for (i = 0; i < ast->params_len; i++) {
         dump_ident_ast_to_file_inner(f, ast->params[i], spaces_num);
@@ -146,12 +161,17 @@ void formal_parameters_list_ast_free(struct FORMAL_PARAMETERS_LIST_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct BODY_AST*create_body_ast(struct STMT_AST**stmts, size_t stmts_len)
+struct BODY_AST*create_body_ast(struct STMT_AST**stmts, size_t stmts_len,
+                                size_t line, size_t pos)
 {
     struct BODY_AST*body;
     SAFE_MALLOC(body, 1);
     body->stmts = stmts;
     body->stmts_len = stmts_len;
+
+    body->line = line;
+    body->pos = pos;
+    
     return body;
 }
 
@@ -161,7 +181,7 @@ static void dump_body_ast_to_file_inner(FILE*f, const struct BODY_AST*ast, size_
 {
     size_t i;
     
-    PUT_SPACES(); fprintf(f, "<body>\n");
+    PUT_SPACES(); fprintf(f, "<body line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     for (i = 0; i < ast->stmts_len; i++) {
         dump_stmt_ast_to_file_inner(f, ast->stmts[i], spaces_num);
@@ -307,12 +327,17 @@ void stmt_ast_free(struct STMT_AST*ast)
 }
 
 struct DECL_STMT_AST*create_decl_stmt_ast(struct IDENT_AST*new_var_name,
-                                          struct ASSIGNMENT_EXPR_AST*assignment)
+                                          struct ASSIGNMENT_EXPR_AST*assignment,
+                                          size_t line, size_t pos)
 {
     struct DECL_STMT_AST*decl_stmt;
     SAFE_MALLOC(decl_stmt, 1);
     decl_stmt->new_var_name = new_var_name;
     decl_stmt->assignment = assignment;
+
+    decl_stmt->line = line;
+    decl_stmt->pos = pos;
+    
     return decl_stmt;
 }
 
@@ -320,7 +345,7 @@ static void dump_assignment_expr_ast_to_file_inner(FILE*f, const struct ASSIGNME
 
 static void dump_decl_stmt_ast_to_file_inner(FILE*f, const struct DECL_STMT_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<decl_stmt>\n");
+    PUT_SPACES(); fprintf(f, "<decl_stmt line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     dump_ident_ast_to_file_inner(f, ast->new_var_name, spaces_num);
     PUT_SPACES(); fprintf(f, "<op>EQ</op>\n");
@@ -342,12 +367,17 @@ void decl_stmt_ast_free(struct DECL_STMT_AST*ast)
 }
 
 struct ASSIGN_STMT_AST*create_assign_stmt_ast(struct VARIABLE_AST*var_name,
-                                              struct ASSIGNMENT_EXPR_AST*assignment)
+                                              struct ASSIGNMENT_EXPR_AST*assignment,
+                                              size_t line, size_t pos)
 {
     struct ASSIGN_STMT_AST*assign_stmt;
     SAFE_MALLOC(assign_stmt, 1);
     assign_stmt->var_name = var_name;
     assign_stmt->assignment = assignment;
+
+    assign_stmt->line = line;
+    assign_stmt->pos = pos;
+    
     return assign_stmt;
 }
 
@@ -355,7 +385,7 @@ static void dump_variable_ast_to_file_inner(FILE*f, const struct VARIABLE_AST*as
 
 static void dump_assign_stmt_ast_to_file_inner(FILE*f, const struct ASSIGN_STMT_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<assign_stmt>\n");
+    PUT_SPACES(); fprintf(f, "<assign_stmt line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     dump_variable_ast_to_file_inner(f, ast->var_name, spaces_num);
     PUT_SPACES(); fprintf(f, "<op>EQ</op>\n");    
@@ -376,11 +406,16 @@ void assign_stmt_ast_free(struct ASSIGN_STMT_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct FUNCTION_CALL_STMT_AST*create_function_call_stmt_ast(struct FUNCTION_CALL_AST*function_call)
+struct FUNCTION_CALL_STMT_AST*create_function_call_stmt_ast(struct FUNCTION_CALL_AST*function_call,
+                                                            size_t line, size_t pos)
 {
     struct FUNCTION_CALL_STMT_AST*function_call_stmt;
     SAFE_MALLOC(function_call_stmt, 1);
     function_call_stmt->function_call = function_call;
+
+    function_call_stmt->line = line;
+    function_call_stmt->pos = pos;
+    
     return function_call_stmt;
 }
 
@@ -388,7 +423,7 @@ static void dump_function_call_ast_to_file_inner(FILE*f, const struct FUNCTION_C
 
 static void dump_function_call_stmt_ast_to_file_inner(FILE*f, const struct FUNCTION_CALL_STMT_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<function_call_stmt>\n");
+    PUT_SPACES(); fprintf(f, "<function_call_stmt line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     dump_function_call_ast_to_file_inner(f, ast->function_call, spaces_num);
     DEC_SPACES_NUM();
@@ -408,13 +443,18 @@ void function_call_stmt_ast_free(struct FUNCTION_CALL_STMT_AST*ast)
 
 struct IF_STMT_AST*create_if_stmt_ast(struct LOGICAL_OR_EXPR_AST*condition,
                                       struct BODY_AST*if_body,
-                                      struct BODY_AST*else_body)
+                                      struct BODY_AST*else_body,
+                                      size_t line, size_t pos)
 {
     struct IF_STMT_AST*if_stmt;
     SAFE_MALLOC(if_stmt, 1);
     if_stmt->condition = condition;
     if_stmt->if_body = if_body;
     if_stmt->else_body = else_body;
+
+    if_stmt->line = line;
+    if_stmt->pos = pos;
+    
     return if_stmt;
 }
 
@@ -423,7 +463,7 @@ static void dump_logical_or_expr_ast_to_file_inner(FILE*f, const struct LOGICAL_
 
 static void dump_if_stmt_ast_to_file_inner(FILE*f, const struct IF_STMT_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<if_stmt>\n");
+    PUT_SPACES(); fprintf(f, "<if_stmt line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "<condition>\n");
     INC_SPACES_NUM();
@@ -465,18 +505,23 @@ void if_stmt_ast_free(struct IF_STMT_AST*ast)
 }
 
 struct WHILE_STMT_AST*create_while_stmt_ast(struct LOGICAL_OR_EXPR_AST*condition,
-                                            struct BODY_AST*body)
+                                            struct BODY_AST*body,
+                                            size_t line, size_t pos)
 {
     struct WHILE_STMT_AST*while_stmt;
     SAFE_MALLOC(while_stmt, 1);
     while_stmt->condition = condition;
     while_stmt->body = body;
+
+    while_stmt->line = line;
+    while_stmt->pos = pos;
+    
     return while_stmt;
 }
 
 static void dump_while_stmt_ast_to_file_inner(FILE*f, const struct WHILE_STMT_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<while_stmt>\n");
+    PUT_SPACES(); fprintf(f, "<while_stmt line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "<condition>\n");
     INC_SPACES_NUM();
@@ -501,9 +546,13 @@ void while_stmt_ast_free(struct WHILE_STMT_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct BREAK_STMT_AST*create_break_stmt_ast() {
+struct BREAK_STMT_AST*create_break_stmt_ast(size_t line, size_t pos) {
     struct BREAK_STMT_AST*break_stmt;
     SAFE_MALLOC(break_stmt, 1);
+
+    break_stmt->line = line;
+    break_stmt->pos = pos;
+    
     return break_stmt;
 }
 
@@ -523,9 +572,13 @@ void break_stmt_ast_free(struct BREAK_STMT_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct CONTINUE_STMT_AST*create_continue_stmt_ast() {
+struct CONTINUE_STMT_AST*create_continue_stmt_ast(size_t line, size_t pos) {
     struct CONTINUE_STMT_AST*continue_stmt;
     SAFE_MALLOC(continue_stmt, 1);
+
+    continue_stmt->line = line;
+    continue_stmt->pos = pos;
+    
     return continue_stmt;
 }
 
@@ -545,17 +598,22 @@ void continue_stmt_ast_free(struct CONTINUE_STMT_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct RETURN_STMT_AST*create_return_stmt_ast(struct ASSIGNMENT_EXPR_AST*result)
+struct RETURN_STMT_AST*create_return_stmt_ast(struct ASSIGNMENT_EXPR_AST*result,
+                                              size_t line, size_t pos)
 {
     struct RETURN_STMT_AST*return_stmt;
     SAFE_MALLOC(return_stmt, 1);
     return_stmt->result = result;
+
+    return_stmt->line = line;
+    return_stmt->pos = pos;
+    
     return return_stmt;
 }
 
 static void dump_return_stmt_ast_to_file_inner(FILE*f, const struct RETURN_STMT_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<return_stmt>\n");
+    PUT_SPACES(); fprintf(f, "<return_stmt> line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     if (ast->result != NULL) {
         INC_SPACES_NUM();
         dump_assignment_expr_ast_to_file_inner(f, ast->result, spaces_num);
@@ -643,13 +701,18 @@ void variable_part_ast_free(struct VARIABLE_PART_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct VARIABLE_AST*create_variable_ast(struct IDENT_AST*ident, struct VARIABLE_PART_AST**parts, size_t parts_len)
+struct VARIABLE_AST*create_variable_ast(struct IDENT_AST*ident, struct VARIABLE_PART_AST**parts, size_t parts_len,
+                                        size_t line, size_t pos)
 {
     struct VARIABLE_AST*variable;
     SAFE_MALLOC(variable, 1);
     variable->ident = ident;
     variable->parts = parts;
     variable->parts_len = parts_len;
+
+    variable->line = line;
+    variable->pos = pos;
+    
     return variable;
 }
 
@@ -657,7 +720,7 @@ static void dump_variable_ast_to_file_inner(FILE*f, const struct VARIABLE_AST*as
 {
     size_t i;
     
-    PUT_SPACES(); fprintf(f, "<variable>\n");
+    PUT_SPACES(); fprintf(f, "<variable line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     dump_ident_ast_to_file_inner(f, ast->ident, spaces_num);
     for (i = 0; i < ast->parts_len; i++) {
@@ -754,12 +817,17 @@ void assignment_expr_ast_free(struct ASSIGNMENT_EXPR_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct OBJECT_LITERAL_AST*create_object_literal_ast(struct PROPERTY_AST**properties, size_t properties_len)
+struct OBJECT_LITERAL_AST*create_object_literal_ast(struct PROPERTY_AST**properties, size_t properties_len,
+                                                    size_t line, size_t pos)
 {
     struct OBJECT_LITERAL_AST*object_literal;
     SAFE_MALLOC(object_literal, 1);
     object_literal->properties = properties;
     object_literal->properties_len = properties_len;
+
+    object_literal->line = line;
+    object_literal->pos = pos;
+
     return object_literal;
 }
 
@@ -769,7 +837,7 @@ static void dump_object_literal_ast_to_file_inner(FILE*f, const struct OBJECT_LI
 {
     size_t i;
     
-    PUT_SPACES(); fprintf(f, "<object_literal>\n");
+    PUT_SPACES(); fprintf(f, "<object_literal line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     for (i = 0; i < ast->properties_len; i++) {
         dump_property_ast_to_file_inner(f, ast->properties[i], spaces_num);
@@ -793,18 +861,23 @@ void object_literal_ast_free(struct OBJECT_LITERAL_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct PROPERTY_AST*create_property_ast(struct IDENT_AST*key, struct ASSIGNMENT_EXPR_AST*value)
+struct PROPERTY_AST*create_property_ast(struct IDENT_AST*key, struct ASSIGNMENT_EXPR_AST*value,
+                                        size_t line, size_t pos)
 {
     struct PROPERTY_AST*property;
     SAFE_MALLOC(property, 1);
     property->key = key;
     property->value = value;
+
+    property->line = line;
+    property->pos = pos;
+    
     return property;
 }
 
 static void dump_property_ast_to_file_inner(FILE*f, const struct PROPERTY_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<property>\n");
+    PUT_SPACES(); fprintf(f, "<property line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     PUT_SPACES(); fprintf(f, "<key>\n");
     INC_SPACES_NUM();
@@ -833,11 +906,16 @@ void property_ast_free(struct PROPERTY_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct ARRAY_LITERAL_AST*create_array_literal_ast(struct ARGS_LIST_AST*args_list)
+struct ARRAY_LITERAL_AST*create_array_literal_ast(struct ARGS_LIST_AST*args_list,
+                                                  size_t line, size_t pos)
 {
     struct ARRAY_LITERAL_AST*array_literal;
     SAFE_MALLOC(array_literal, 1);
     array_literal->args_list = args_list;
+
+    array_literal->line = line;
+    array_literal->pos = pos;
+    
     return array_literal;
 }
 
@@ -845,7 +923,7 @@ static void dump_args_list_ast_to_file_inner(FILE*f, const struct ARGS_LIST_AST*
 
 void dump_array_literal_ast_to_file_inner(FILE*f, const struct ARRAY_LITERAL_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<array_literal>\n");
+    PUT_SPACES(); fprintf(f, "<array_literal line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     if (ast->args_list != NULL) {
         dump_args_list_ast_to_file_inner(f, ast->args_list, spaces_num);
@@ -867,12 +945,17 @@ void array_literal_ast_free(struct ARRAY_LITERAL_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct LOGICAL_OR_EXPR_AST*create_logical_or_expr_ast(struct LOGICAL_AND_EXPR_AST**and_exprs, size_t and_exprs_len)
+struct LOGICAL_OR_EXPR_AST*create_logical_or_expr_ast(struct LOGICAL_AND_EXPR_AST**and_exprs, size_t and_exprs_len,
+                                                      size_t line, size_t pos)
 {
     struct LOGICAL_OR_EXPR_AST*logical_or_expr;
     SAFE_MALLOC(logical_or_expr, 1);
     logical_or_expr->and_exprs = and_exprs;
     logical_or_expr->and_exprs_len = and_exprs_len;
+
+    logical_or_expr->line = line;
+    logical_or_expr->pos = pos;
+    
     return logical_or_expr;
 }
 
@@ -885,7 +968,7 @@ static void dump_logical_or_expr_ast_to_file_inner(FILE*f, const struct LOGICAL_
     } else {
         size_t i;
         
-        PUT_SPACES(); fprintf(f, "<logical_or_expr>\n");
+        PUT_SPACES(); fprintf(f, "<logical_or_expr line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
         INC_SPACES_NUM();
         dump_logical_and_expr_ast_to_file_inner(f, ast->and_exprs[0], spaces_num);
         for (i = 1; i < ast->and_exprs_len; i++) {
@@ -912,12 +995,17 @@ void logical_or_expr_ast_free(struct LOGICAL_OR_EXPR_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct LOGICAL_AND_EXPR_AST*create_logical_and_expr_ast(struct EQ_EXPR_AST**eq_exprs, size_t eq_exprs_len)
+struct LOGICAL_AND_EXPR_AST*create_logical_and_expr_ast(struct EQ_EXPR_AST**eq_exprs, size_t eq_exprs_len,
+                                                        size_t line, size_t pos)
 {
     struct LOGICAL_AND_EXPR_AST*logical_and_expr;
     SAFE_MALLOC(logical_and_expr, 1);
     logical_and_expr->eq_exprs = eq_exprs;
     logical_and_expr->eq_exprs_len = eq_exprs_len;
+
+    logical_and_expr->line = line;
+    logical_and_expr->pos = pos;
+    
     return logical_and_expr;
 }
 
@@ -930,7 +1018,7 @@ static void dump_logical_and_expr_ast_to_file_inner(FILE*f, const struct LOGICAL
     } else {
         size_t i;
         
-        PUT_SPACES(); fprintf(f, "<logical_and_expr>\n");
+        PUT_SPACES(); fprintf(f, "<logical_and_expr line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
         INC_SPACES_NUM();
         dump_eq_expr_ast_to_file_inner(f, ast->eq_exprs[0], spaces_num);
         for (i = 1; i < ast->eq_exprs_len; i++) {
@@ -959,13 +1047,18 @@ void logical_and_expr_ast_free(struct LOGICAL_AND_EXPR_AST*ast)
 
 struct EQ_EXPR_AST*create_eq_expr_ast(struct RELATIONAL_EXPR_AST*left,
                                       enum AST_EQ_OP eq_op,
-                                      struct RELATIONAL_EXPR_AST*right)
+                                      struct RELATIONAL_EXPR_AST*right,
+                                      size_t line, size_t pos)
 {
     struct EQ_EXPR_AST*eq_expr;
     SAFE_MALLOC(eq_expr, 1);
     eq_expr->left = left;
     eq_expr->eq_op = eq_op;
     eq_expr->right = right;
+
+    eq_expr->line = line;
+    eq_expr->pos = pos;
+    
     return eq_expr;
 }
 
@@ -976,7 +1069,7 @@ static void dump_eq_expr_ast_to_file_inner(FILE*f, const struct EQ_EXPR_AST*ast,
     if (ast->right == NULL) {
         dump_relational_expr_ast_to_file_inner(f, ast->left, spaces_num);
     } else {
-        PUT_SPACES(); fprintf(f, "<eq_expr>\n");
+        PUT_SPACES(); fprintf(f, "<eq_expr line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
         INC_SPACES_NUM();
         dump_relational_expr_ast_to_file_inner(f, ast->left, spaces_num);
         if (ast->eq_op == AST_EQ_OP_EQEQ) {
@@ -1006,13 +1099,18 @@ void eq_expr_ast_free(struct EQ_EXPR_AST*ast)
 
 struct RELATIONAL_EXPR_AST*create_relational_expr_ast(struct ADDITIVE_EXPR_AST*left,
                                                       enum AST_REL_OP rel_op,
-                                                      struct ADDITIVE_EXPR_AST*right)
+                                                      struct ADDITIVE_EXPR_AST*right,
+                                                      size_t line, size_t pos)
 {
     struct RELATIONAL_EXPR_AST*relational_expr;
     SAFE_MALLOC(relational_expr, 1);
     relational_expr->left = left;
     relational_expr->rel_op = rel_op;
     relational_expr->right = right;
+
+    relational_expr->line = line;
+    relational_expr->pos = pos;
+    
     return relational_expr;
 }
 
@@ -1023,7 +1121,7 @@ static void dump_relational_expr_ast_to_file_inner(FILE*f, const struct RELATION
     if (ast->right == NULL) {
         dump_additive_expr_ast_to_file_inner(f, ast->left, spaces_num);
     } else {
-        PUT_SPACES(); fprintf(f, "<relational_expr>\n");
+        PUT_SPACES(); fprintf(f, "<relational_expr line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
         INC_SPACES_NUM();
         dump_additive_expr_ast_to_file_inner(f, ast->left, spaces_num);
         if (ast->rel_op == AST_REL_OP_LT) {
@@ -1057,13 +1155,18 @@ void relational_expr_ast_free(struct RELATIONAL_EXPR_AST*ast)
 
 struct ADDITIVE_EXPR_AST*create_additive_expr_ast(struct MULTIPLICATIVE_EXPR_AST**muls,
                                                   enum AST_ADDITIVE_OP*ops,
-                                                  size_t muls_len)
+                                                  size_t muls_len,
+                                                  size_t line, size_t pos)
 {
     struct ADDITIVE_EXPR_AST*additive_expr;
     SAFE_MALLOC(additive_expr, 1);
     additive_expr->muls = muls;
     additive_expr->ops = ops;
     additive_expr->muls_len = muls_len;
+
+    additive_expr->line = line;
+    additive_expr->pos = pos;
+    
     return additive_expr;
 }
 
@@ -1076,7 +1179,7 @@ static void dump_additive_expr_ast_to_file_inner(FILE*f, const struct ADDITIVE_E
     } else {
         size_t i;
         
-        PUT_SPACES(); fprintf(f, "<additive_expr>\n");
+        PUT_SPACES(); fprintf(f, "<additive_expr line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
         INC_SPACES_NUM();
         dump_multiplicative_expr_ast_to_file_inner(f, ast->muls[0], spaces_num);
         for (i = 1; i < ast->muls_len; i++) {
@@ -1110,13 +1213,18 @@ void additive_expr_ast_free(struct ADDITIVE_EXPR_AST*ast)
 
 struct MULTIPLICATIVE_EXPR_AST*create_multiplicative_expr_ast(struct LEFT_UNARY_EXPR_AST**lues,
                                                               enum AST_MULTIPLICATIVE_OP*ops,
-                                                              size_t lues_len)
+                                                              size_t lues_len,
+                                                              size_t line, size_t pos)
 {
     struct MULTIPLICATIVE_EXPR_AST*mul_expr;
     SAFE_MALLOC(mul_expr, 1);
     mul_expr->lues = lues;
     mul_expr->ops = ops;
     mul_expr->lues_len = lues_len;
+
+    mul_expr->line = line;
+    mul_expr->pos = pos;
+
     return mul_expr;
 }
 
@@ -1129,7 +1237,7 @@ static void dump_multiplicative_expr_ast_to_file_inner(FILE*f, const struct MULT
     } else {
         size_t i;
         
-        PUT_SPACES(); fprintf(f, "<multiplicative_expr>\n");
+        PUT_SPACES(); fprintf(f, "<multiplicative_expr line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
         INC_SPACES_NUM();
         dump_left_unary_expr_ast_to_file_inner(f, ast->lues[0], spaces_num);
         for (i = 1; i < ast->lues_len; i++) {
@@ -1163,12 +1271,17 @@ void multiplicative_expr_ast_free(struct MULTIPLICATIVE_EXPR_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct LEFT_UNARY_EXPR_AST*create_left_unary_expr_ast(enum AST_LEFT_UNARY_OP op, struct PRIMARY_EXPR_AST*expr)
+struct LEFT_UNARY_EXPR_AST*create_left_unary_expr_ast(enum AST_LEFT_UNARY_OP op, struct PRIMARY_EXPR_AST*expr,
+                                                      size_t line, size_t pos)
 {
     struct LEFT_UNARY_EXPR_AST*lue;
     SAFE_MALLOC(lue, 1);
     lue->op = op;
     lue->expr = expr;
+
+    lue->line = line;
+    lue->pos = pos;
+    
     return lue;
 }
 
@@ -1177,7 +1290,7 @@ static void dump_primary_expr_ast_to_file_inner(FILE*f, const struct PRIMARY_EXP
 static void dump_left_unary_expr_ast_to_file_inner(FILE*f, const struct LEFT_UNARY_EXPR_AST*ast, size_t spaces_num)
 {
     if (ast->op != AST_LEFT_UNARY_OP_PLUS) {
-        PUT_SPACES(); fprintf(f, "<left_unary_expr>\n");
+        PUT_SPACES(); fprintf(f, "<left_unary_expr line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
         INC_SPACES_NUM();
         PUT_SPACES(); fprintf(f, "<op>UNARY_MINUS</op>\n");
         dump_primary_expr_ast_to_file_inner(f, ast->expr, spaces_num);
@@ -1277,20 +1390,25 @@ void primary_expr_ast_free(struct PRIMARY_EXPR_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct FUNCTION_CALL_AST*create_function_call_ast(struct IDENT_AST*function_name, struct ARGS_LIST_AST*args_list)
+struct FUNCTION_CALL_AST*create_function_call_ast(struct IDENT_AST*function_name, struct ARGS_LIST_AST*args_list,
+                                                  size_t line, size_t pos)
 {
     struct FUNCTION_CALL_AST*function_call;
     SAFE_MALLOC(function_call, 1);
     function_call->function_name = function_name;
     function_call->args_list = args_list;
+
+    function_call->line = line;
+    function_call->pos = pos;
+    
     return function_call;
 }
 
 static void dump_function_call_ast_to_file_inner(FILE*f, const struct FUNCTION_CALL_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<function_call>\n");
+    PUT_SPACES(); fprintf(f, "<function_call line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
-    PUT_SPACES(); fprintf(f, "<function_name>\n");
+    PUT_SPACES(); fprintf(f, "<function_name line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     dump_ident_ast_to_file_inner(f, ast->function_name, spaces_num);
     DEC_SPACES_NUM();
@@ -1316,12 +1434,17 @@ void function_call_ast_free(struct FUNCTION_CALL_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct ARGS_LIST_AST*create_args_list_ast(struct ASSIGNMENT_EXPR_AST**assignment_exprs, size_t assignment_exprs_len)
+struct ARGS_LIST_AST*create_args_list_ast(struct ASSIGNMENT_EXPR_AST**assignment_exprs, size_t assignment_exprs_len,
+                                          size_t line, size_t pos)
 {
     struct ARGS_LIST_AST*args_list;
     SAFE_MALLOC(args_list, 1);
     args_list->assignment_exprs = assignment_exprs;
     args_list->assignment_exprs_len = assignment_exprs_len;
+
+    args_list->line = line;
+    args_list->pos = pos;
+    
     return args_list;
 }
 
@@ -1329,7 +1452,7 @@ static void dump_args_list_ast_to_file_inner(FILE*f, const struct ARGS_LIST_AST*
 {
     size_t i;
     
-    PUT_SPACES(); fprintf(f, "<args_list>\n");
+    PUT_SPACES(); fprintf(f, "<args_list line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
     INC_SPACES_NUM();
     for (i = 0; i < ast->assignment_exprs_len; i++) {
         dump_assignment_expr_ast_to_file_inner(f, ast->assignment_exprs[i], spaces_num);
@@ -1353,17 +1476,21 @@ void args_list_ast_free(struct ARGS_LIST_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct IDENT_AST*create_ident_ast(const char*ident)
+struct IDENT_AST*create_ident_ast(const char*ident, size_t line, size_t pos)
 {
     struct IDENT_AST*ident_ast;
     SAFE_MALLOC(ident_ast, 1);
     strncpy(ident_ast->ident, ident, sizeof(ident_ast->ident));
+
+    ident_ast->line = line;
+    ident_ast->pos = pos;
+    
     return ident_ast;
 }
 
 static void dump_ident_ast_to_file_inner(FILE*f, const struct IDENT_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<ident>%s</ident>\n", ast->ident);
+    PUT_SPACES(); fprintf(f, "<ident line=\"%zu\" pos=\"%zu\">%s</ident>\n", ast->line, ast->pos, ast->ident);
 }
 
 __inline__ void dump_ident_ast_to_file(FILE*f, const struct IDENT_AST*ast)
@@ -1376,17 +1503,21 @@ void ident_ast_free(struct IDENT_AST*ast)
     SAFE_FREE(ast);
 }
 
-struct NUMBER_AST*create_number_ast(long long number)
+struct NUMBER_AST*create_number_ast(long long number, size_t line, size_t pos)
 {
     struct NUMBER_AST*number_ast;
     SAFE_MALLOC(number_ast, 1);
     number_ast->number = number;
+
+    number_ast->line = line;
+    number_ast->pos = pos;
+    
     return number_ast;
 }
 
 static void dump_number_ast_to_file_inner(FILE*f, const struct NUMBER_AST*ast, size_t spaces_num)
 {
-    PUT_SPACES(); fprintf(f, "<number>%lld</number>\n", ast->number);
+    PUT_SPACES(); fprintf(f, "<number line=\"%zu\" pos=\"%zu\">%lld</number>\n", ast->line, ast->pos, ast->number);
 }
 
 __inline__ void dump_number_ast_to_file(FILE*f, const struct NUMBER_AST*ast)
