@@ -167,8 +167,6 @@ void*allocator_malloc_block(allocator_type_t a, size_t sizemem)
         BLOCK_L_FLAG(cur) = BUSY_BLOCK;
         BLOCK_R_FLAG(cur) = BUSY_BLOCK;
         allocator_list_push_back(&(a->busy_list), cur);
-
-        printf("busy: %lu, free: %lu, free mem: %lu\n",  a->busy_list.count, a->free_list.count, a->free_list.sizemem);
         
         return BLOCK_DATA(cur);
     }
@@ -197,8 +195,6 @@ void*allocator_malloc_block(allocator_type_t a, size_t sizemem)
     BLOCK_R_DATA_LEN(tmp_block) = len;
     BLOCK_R_FLAG(tmp_block) = FREE_BLOCK;
     allocator_list_insert_elem(&(a->free_list), tmp_block);
-
-    printf("busy: %lu, free: %lu, free mem: %lu\n",  a->busy_list.count, a->free_list.count, a->free_list.sizemem);
     
     return BLOCK_DATA(cur);
 }

@@ -8,6 +8,17 @@ enum BYTECODE_GENERATOR_CODES
     BYTECODE_GENERATOR_OK = 0,
 };
 
+struct BYTECODE_POS {
+    size_t line;
+    size_t pos;
+};
+
+struct BYTECODE_ERROR
+{
+    struct BYTECODE_POS pos;
+    enum BYTECODE_GENERATOR_CODES code;
+};
+
 struct BYTECODE_GENERATOR;
 
 typedef struct BYTECODE_GENERATOR* bytecode_generator_type_t;
@@ -108,6 +119,8 @@ struct BYTECODE
     struct CONSTANT*constant_pool;
     size_t constant_pool_len;
     size_t constant_pool_cap;
+
+    struct BYTECODE_POS*poss;
 };
 
 typedef struct BYTECODE* bytecode_type_t;

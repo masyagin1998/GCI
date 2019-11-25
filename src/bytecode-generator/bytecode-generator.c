@@ -14,6 +14,8 @@ struct BYTECODE_GENERATOR
     size_t locals_cap;
 
     size_t scope_depth;
+
+    struct BYTECODE_POS err;
 };
 
 /* constant-pool functions. */
