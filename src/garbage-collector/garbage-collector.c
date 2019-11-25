@@ -44,31 +44,15 @@ static void*lookup_new_location(garbage_collector_type_t gc, void*ptr)
     return (((char*) BLOCK_DATA(ptrs_map_get(&(gc->ptrs_map), o))) + 1);
 }
 
-static void run_gc(garbage_collector_type_t gc, void**ptr, size_t ptr_sizemem)
+static void run_gc_inner(garbage_collector_type_t gc, void**ptr, size_t ptr_sizemem)
 {
     struct VALUE*stack = (*(gc->stack));
     struct VALUE*stack_top = (*(gc->stack_top));
-
+    
     struct VALUE*val;
-
     void*unscanned_ptr;
 
-    struct ALLOCATOR tmp;
-
-    /* check if realloc is needed. */
-    int need_realloc = ((gc->a.busy_list.sizemem + gc->a.busy_list.count * BLOCK_OVERHEAD) +
-                        (ptr_sizemem + BLOCK_OVERHEAD)) >= gc->a.sizemem / 2;
-    size_t new_sizemem = need_realloc ? ((gc->a.sizemem + ptr_sizemem) * 2) : gc->a.sizemem;
-
-    printf("RUN GC\n");
-
-    /* realloc if needed. */
-    if (need_realloc) {
-        allocator_free_pool(&(gc->b));
-        allocator_malloc_pool(&(gc->b), new_sizemem);
-    } else {
-        allocator_clean_pool(&(gc->b));
-    }
+    allocator_clean_pool(&(gc->b));
 
     /* Cheneys GC from Aho-Ullman. */
 
@@ -113,16 +97,36 @@ static void run_gc(garbage_collector_type_t gc, void**ptr, size_t ptr_sizemem)
             }
         }
         unscanned_ptr = BLOCK_LIST_NEXT(unscanned_ptr);
-    }
+    }    
+}
+
+static void run_gc(garbage_collector_type_t gc, void**ptr, size_t ptr_sizemem)
+{
+    struct ALLOCATOR tmp;
+
+    int need_realloc;
+
+    run_gc_inner(gc, ptr, ptr_sizemem);
+
+    /* check if realloc is needed. */
+    need_realloc = ((gc->b.busy_list.sizemem + gc->b.busy_list.count * BLOCK_OVERHEAD) +
+                    (ptr_sizemem + BLOCK_OVERHEAD)) >= gc->b.sizemem / 2;
 
     if (need_realloc) {
+        size_t new_sizemem = (gc->b.sizemem + (ptr_sizemem + BLOCK_OVERHEAD)) * 2;
+
+        tmp = gc->a;
+        gc->a = gc->b;
+        gc->b = tmp;
+        
+        allocator_free_pool(&(gc->b));
+        allocator_malloc_pool(&(gc->b), new_sizemem);
+
+        run_gc_inner(gc, ptr, ptr_sizemem);
+
         allocator_free_pool(&(gc->a));
         allocator_malloc_pool(&(gc->a), new_sizemem);
-    } else {
-        allocator_clean_pool(&(gc->a));
     }
-
-    printf("b: %lu ; f: %lu\n", gc->a.busy_list.count, gc->a.free_list.count);
 
     tmp = gc->a;
     gc->a = gc->b;
@@ -235,7 +239,6 @@ struct OBJECT*garbage_collector_realloc_obj(garbage_collector_type_t gc, struct 
 
 void free_garbage_collector(garbage_collector_type_t gc)
 {
-    printf("b: %lu ; f: %lu\n", gc->a.busy_list.count, gc->a.free_list.count);
     allocator_free_pool(&(gc->a));
     allocator_free_pool(&(gc->b));
     SAFE_FREE(gc);
