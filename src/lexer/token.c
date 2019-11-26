@@ -1,6 +1,5 @@
 #include "lexer.h"
 #include "lexer_priv.h"
-#include "macro.h"
 
 #include <stdlib.h>
 
