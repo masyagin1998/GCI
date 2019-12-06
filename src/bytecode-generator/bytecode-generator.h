@@ -83,8 +83,8 @@ enum BC_OP_CODES
 
     BC_OP_NEGATE, /* - */
 
+    BC_OP_HAS_PROPERTY, /* check if property exists in obj; (-1) - not obj. */
     BC_OP_LEN,          /* get len of array; (-1) - not array.              */
-    BC_OP_HAS_PROPERTY, /* check if property exists in obj; (-1) - not obj. */    
 
     BC_OP_JUMP_IF_FALSE, /* conditional jump.   */
     BC_OP_JUMP,          /* unconditional jump. */
