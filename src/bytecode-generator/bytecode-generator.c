@@ -15,7 +15,7 @@ struct BYTECODE_GENERATOR
 
     size_t scope_depth;
 
-    struct BYTECODE_POS err;
+    struct BYTECODE_ERROR err;
 };
 
 /* constant-pool functions. */
@@ -115,12 +115,22 @@ void bytecode_generator_conf(bytecode_generator_type_t bc_gen, struct UNIT_AST*a
     bc_gen->bc = create_bytecode();
 }
 
+static void set_bytecode_generator_error(bytecode_generator_type_t bc_gen, size_t line, size_t pos, enum BYTECODE_GENERATOR_CODES code)
+{
+    bc_gen->err.pos.line = line;
+    bc_gen->err.pos.pos = pos;
+    bc_gen->err.code = code;
+}
+
 static enum BYTECODE_GENERATOR_CODES assignment_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct ASSIGNMENT_EXPR_AST*ast);
 
 static enum BYTECODE_GENERATOR_CODES property_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct PROPERTY_AST*ast) {
     struct CONSTANT cnst;
     
-    assignment_expr_ast_bytecode_generate(bc_gen, ast->value);
+    enum BYTECODE_GENERATOR_CODES r = assignment_expr_ast_bytecode_generate(bc_gen, ast->value);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }    
 
     PUSH_BACK(bc_gen->bc->op_codes, BC_OP_INIT_OBJ_PROP);
     cnst = create_constant_from_fieldref(ast->key->ident);
@@ -134,7 +144,10 @@ static enum BYTECODE_GENERATOR_CODES object_literal_ast_bytecode_generate(byteco
     size_t i;
 
     for (i = 0; i < ast->properties_len; i++) {
-        property_ast_bytecode_generate(bc_gen, ast->properties[i]);
+        enum BYTECODE_GENERATOR_CODES r = property_ast_bytecode_generate(bc_gen, ast->properties[i]);
+        if (r != BYTECODE_GENERATOR_OK) {
+            return r;
+        }
     }
 
     PUSH_BACK(bc_gen->bc->op_codes, BC_OP_CREATE_OBJ);
@@ -149,7 +162,10 @@ static enum BYTECODE_GENERATOR_CODES array_literal_ast_bytecode_generate(bytecod
 
     if (ast->args_list != NULL) {
         for (i = ast->args_list->assignment_exprs_len - 1; i >= 0; i--) {
-            assignment_expr_ast_bytecode_generate(bc_gen, ast->args_list->assignment_exprs[i]);
+            enum BYTECODE_GENERATOR_CODES r = assignment_expr_ast_bytecode_generate(bc_gen, ast->args_list->assignment_exprs[i]);
+            if (r != BYTECODE_GENERATOR_OK) {
+                return r;
+            }
         }
     }
 
@@ -160,8 +176,6 @@ static enum BYTECODE_GENERATOR_CODES array_literal_ast_bytecode_generate(bytecod
     } else {
         PUSH_BACK(bc_gen->bc->op_codes, 0);
     }
-
-    printf("heh\n");
 
     return BYTECODE_GENERATOR_OK;
 }
@@ -179,12 +193,13 @@ static enum BYTECODE_GENERATOR_CODES number_ast_bytecode_generate(bytecode_gener
 
 static enum BYTECODE_GENERATOR_CODES logical_or_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct LOGICAL_OR_EXPR_AST*ast);
 
-static enum BYTECODE_GENERATOR_CODES variabe_ast_bytecode_generate_inner(bytecode_generator_type_t bc_gen, const struct VARIABLE_AST*ast, int is_set_op)
+static enum BYTECODE_GENERATOR_CODES variable_ast_bytecode_generate_inner(bytecode_generator_type_t bc_gen, const struct VARIABLE_AST*ast, int is_set_op)
 {
     int idx = local_variable_index(bc_gen, ast->ident->ident);
 
     if (idx == -1) {
-
+        set_bytecode_generator_error(bc_gen, ast->line, ast->pos, BYTECODE_GENERATOR_NO_LOCAL_VARIABLE);
+        return BYTECODE_GENERATOR_NO_LOCAL_VARIABLE;
     }
 
     if (ast->parts_len == 0) {
@@ -216,7 +231,8 @@ static enum BYTECODE_GENERATOR_CODES variabe_ast_bytecode_generate_inner(bytecod
                 count--;
                 PUSH_BACK(bc_gen->bc->op_codes, count);
             } else {
-                
+                fprintf(stderr, "Invalid VARIALE_PART_TYPE: %d\n", ast->parts[i]->type);
+                exit(EXIT_FAILURE);        
             }
         }   
     }
@@ -226,30 +242,65 @@ static enum BYTECODE_GENERATOR_CODES variabe_ast_bytecode_generate_inner(bytecod
 
 static enum BYTECODE_GENERATOR_CODES variable_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct VARIABLE_AST*ast)
 {
-    return variabe_ast_bytecode_generate_inner(bc_gen, ast, 0);
+    return variable_ast_bytecode_generate_inner(bc_gen, ast, 0);
+}
+
+static enum BYTECODE_GENERATOR_CODES has_property_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct HAS_PROPERTY_EXPR_AST*ast)
+{
+    struct CONSTANT cnst;
+    enum BYTECODE_GENERATOR_CODES r = variable_ast_bytecode_generate_inner(bc_gen, ast->obj, 0);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }    
+    PUSH_BACK(bc_gen->bc->op_codes, BC_OP_HAS_PROPERTY);
+    cnst = create_constant_from_fieldref(ast->ident->ident);
+    PUSH_BACK(bc_gen->bc->op_codes, constant_pool_push_back(bc_gen->bc, cnst));    
+
+    return BYTECODE_GENERATOR_OK;    
+}
+
+static enum BYTECODE_GENERATOR_CODES len_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct LEN_EXPR_AST*ast)
+{
+    enum BYTECODE_GENERATOR_CODES r = variable_ast_bytecode_generate_inner(bc_gen, ast->arr, 0);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }
+    PUSH_BACK(bc_gen->bc->op_codes, BC_OP_LEN);
+
+    return BYTECODE_GENERATOR_OK;
 }
 
 static enum BYTECODE_GENERATOR_CODES function_call_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct FUNCTION_CALL_AST*ast)
 {
     /* TODO */
+    PREFIX_UNUSED(bc_gen);
+    PREFIX_UNUSED(ast);
     
     return BYTECODE_GENERATOR_OK;
 }
 
 static enum BYTECODE_GENERATOR_CODES primary_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct PRIMARY_EXPR_AST*ast)
 {
+    enum BYTECODE_GENERATOR_CODES r;
+    
     switch (ast->type) {
+    case AST_PRIMARY_EXPR_TYPE_HAS_PROPERTY:
+        r = has_property_expr_ast_bytecode_generate(bc_gen, ast->has_property_expr);
+        break;
+    case AST_PRIMARY_EXPR_TYPE_LEN:
+        r = len_expr_ast_bytecode_generate(bc_gen, ast->len_expr);
+        break;
     case AST_PRIMARY_EXPR_TYPE_FUNCTION_CALL:
-        function_call_expr_ast_bytecode_generate(bc_gen, ast->function_call);
+        r = function_call_expr_ast_bytecode_generate(bc_gen, ast->function_call);
         break;
     case AST_PRIMARY_EXPR_TYPE_VARIABLE:
-        variable_ast_bytecode_generate(bc_gen, ast->var_name);
+        r = variable_ast_bytecode_generate(bc_gen, ast->var_name);
         break;
     case AST_PRIMARY_EXPR_TYPE_NUMBER:
-        number_ast_bytecode_generate(bc_gen, ast->number);
+        r = number_ast_bytecode_generate(bc_gen, ast->number);
         break;
     case AST_PRIMARY_EXPR_TYPE_LOGICAL_OR_EXPR:
-        logical_or_expr_ast_bytecode_generate(bc_gen, ast->logical_or_expr);
+        r = logical_or_expr_ast_bytecode_generate(bc_gen, ast->logical_or_expr);
         break;
     default:
         fprintf(stderr, "Invalid PRIMARY_EXPR_AST type: %d\n", ast->type);
@@ -257,13 +308,16 @@ static enum BYTECODE_GENERATOR_CODES primary_expr_ast_bytecode_generate(bytecode
         break;
     }
 
-    return BYTECODE_GENERATOR_OK;
+    return r;
 }
 
 static enum BYTECODE_GENERATOR_CODES left_unary_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct LEFT_UNARY_EXPR_AST*ast)
 {
 
-    primary_expr_ast_bytecode_generate(bc_gen, ast->expr);
+    enum BYTECODE_GENERATOR_CODES r = primary_expr_ast_bytecode_generate(bc_gen, ast->expr);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }
     if (ast->op != AST_LEFT_UNARY_OP_PLUS) {
         if (ast->op == AST_LEFT_UNARY_OP_MINUS) {
             PUSH_BACK(bc_gen->bc->op_codes, BC_OP_NEGATE);
@@ -277,10 +331,15 @@ static enum BYTECODE_GENERATOR_CODES multiplicative_expr_ast_bytecode_generate(b
 {
     size_t i;
 
-    left_unary_expr_ast_bytecode_generate(bc_gen, ast->lues[0]);
-
+    enum BYTECODE_GENERATOR_CODES r = left_unary_expr_ast_bytecode_generate(bc_gen, ast->lues[0]);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }
     for (i = 1; i < ast->lues_len; i++) {
-        left_unary_expr_ast_bytecode_generate(bc_gen, ast->lues[i]);
+        r = left_unary_expr_ast_bytecode_generate(bc_gen, ast->lues[i]);
+        if (r != BYTECODE_GENERATOR_OK) {
+            return r;
+        }
         switch (ast->ops[i - 1]) {
         case AST_MULTIPLICATIVE_OP_MUL:
             PUSH_BACK(bc_gen->bc->op_codes, BC_OP_MULTIPLICATIVE_MUL);
@@ -305,10 +364,15 @@ static enum BYTECODE_GENERATOR_CODES additive_expr_ast_bytecode_generate(bytecod
 {
     size_t i;
 
-    multiplicative_expr_ast_bytecode_generate(bc_gen, ast->muls[0]);
-
+    enum BYTECODE_GENERATOR_CODES r = multiplicative_expr_ast_bytecode_generate(bc_gen, ast->muls[0]);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }
     for (i = 1; i < ast->muls_len; i++) {
-        multiplicative_expr_ast_bytecode_generate(bc_gen, ast->muls[i]);
+        r = multiplicative_expr_ast_bytecode_generate(bc_gen, ast->muls[i]);
+        if (r != BYTECODE_GENERATOR_OK) {
+            return r;
+        }
         if (ast->ops[i - 1] == AST_ADDITIVE_OP_PLUS) {
             PUSH_BACK(bc_gen->bc->op_codes, BC_OP_ADDITIVE_PLUS);
         } else if (ast->ops[i - 1] == AST_ADDITIVE_OP_MINUS) {
@@ -324,9 +388,15 @@ static enum BYTECODE_GENERATOR_CODES additive_expr_ast_bytecode_generate(bytecod
 
 static enum BYTECODE_GENERATOR_CODES relational_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct RELATIONAL_EXPR_AST*ast)
 {
-    additive_expr_ast_bytecode_generate(bc_gen, ast->left);
+    enum BYTECODE_GENERATOR_CODES r = additive_expr_ast_bytecode_generate(bc_gen, ast->left);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }
     if (ast->right != NULL) {
-        additive_expr_ast_bytecode_generate(bc_gen, ast->right);
+        r = additive_expr_ast_bytecode_generate(bc_gen, ast->right);
+        if (r != BYTECODE_GENERATOR_OK) {
+            return r;
+        }
         switch (ast->rel_op) {
         case AST_REL_OP_LT:
             PUSH_BACK(bc_gen->bc->op_codes, BC_OP_REL_LT);
@@ -352,9 +422,15 @@ static enum BYTECODE_GENERATOR_CODES relational_expr_ast_bytecode_generate(bytec
 
 static enum BYTECODE_GENERATOR_CODES eq_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct EQ_EXPR_AST*ast)
 {
-    relational_expr_ast_bytecode_generate(bc_gen, ast->left);
+    enum BYTECODE_GENERATOR_CODES r = relational_expr_ast_bytecode_generate(bc_gen, ast->left);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }    
     if (ast->right != NULL) {
-        relational_expr_ast_bytecode_generate(bc_gen, ast->right);
+        r = relational_expr_ast_bytecode_generate(bc_gen, ast->right);
+        if (r != BYTECODE_GENERATOR_OK) {
+            return r;
+        }
         if (ast->eq_op == AST_EQ_OP_EQEQ) {
             PUSH_BACK(bc_gen->bc->op_codes, BC_OP_EQ_EQEQ);
         } else if (ast->eq_op == AST_EQ_OP_NEQ) {
@@ -372,9 +448,15 @@ static enum BYTECODE_GENERATOR_CODES logical_and_expr_ast_bytecode_generate(byte
 {
     size_t i;
 
-    eq_expr_ast_bytecode_generate(bc_gen, ast->eq_exprs[0]);
+    enum BYTECODE_GENERATOR_CODES r = eq_expr_ast_bytecode_generate(bc_gen, ast->eq_exprs[0]);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }    
     for (i = 1; i < ast->eq_exprs_len; i++) {
-        eq_expr_ast_bytecode_generate(bc_gen, ast->eq_exprs[i]);
+        r = eq_expr_ast_bytecode_generate(bc_gen, ast->eq_exprs[i]);
+        if (r != BYTECODE_GENERATOR_OK) {
+            return r;
+        }
         PUSH_BACK(bc_gen->bc->op_codes, BC_OP_LOGICAL_AND);
     }
 
@@ -385,9 +467,16 @@ static enum BYTECODE_GENERATOR_CODES logical_or_expr_ast_bytecode_generate(bytec
 {
     size_t i;
 
-    logical_and_expr_ast_bytecode_generate(bc_gen, ast->and_exprs[0]);
+    enum BYTECODE_GENERATOR_CODES r = logical_and_expr_ast_bytecode_generate(bc_gen, ast->and_exprs[0]);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }    
+    
     for (i = 1; i < ast->and_exprs_len; i++) {
-        logical_and_expr_ast_bytecode_generate(bc_gen, ast->and_exprs[i]);
+        r = logical_and_expr_ast_bytecode_generate(bc_gen, ast->and_exprs[i]);
+        if (r != BYTECODE_GENERATOR_OK) {
+            return r;
+        }
         PUSH_BACK(bc_gen->bc->op_codes, BC_OP_LOGICAL_OR);
     }
 
@@ -396,15 +485,17 @@ static enum BYTECODE_GENERATOR_CODES logical_or_expr_ast_bytecode_generate(bytec
 
 static enum BYTECODE_GENERATOR_CODES assignment_expr_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct ASSIGNMENT_EXPR_AST*ast)
 {
+    enum BYTECODE_GENERATOR_CODES r;
+    
     switch (ast->type) {
     case AST_ASSIGNMENT_EXPR_TYPE_OBJECT_LITERAL:
-        object_literal_ast_bytecode_generate(bc_gen, ast->object_literal);
+        r = object_literal_ast_bytecode_generate(bc_gen, ast->object_literal);
         break;
     case AST_ASSIGNMENT_EXPR_TYPE_ARRAY_LITERAL:
-        array_literal_ast_bytecode_generate(bc_gen, ast->array_literal);
+        r = array_literal_ast_bytecode_generate(bc_gen, ast->array_literal);
         break;
     case AST_ASSIGNMENT_EXPR_TYPE_LOGICAL_OR_EXPR:
-        logical_or_expr_ast_bytecode_generate(bc_gen, ast->logical_or_expr);
+        r = logical_or_expr_ast_bytecode_generate(bc_gen, ast->logical_or_expr);
         break;
     default:
         fprintf(stderr, "Invalid ASSIGNMENT_EXPR_AST type: %d\n", ast->type);
@@ -412,7 +503,7 @@ static enum BYTECODE_GENERATOR_CODES assignment_expr_ast_bytecode_generate(bytec
         break;
     }
 
-    return BYTECODE_GENERATOR_OK;    
+    return r;
 }
 
 static enum BYTECODE_GENERATOR_CODES decl_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct DECL_STMT_AST*ast)
@@ -421,12 +512,16 @@ static enum BYTECODE_GENERATOR_CODES decl_stmt_ast_bytecode_generate(bytecode_ge
 
     struct LOCAL_VARIABLE lv;
     
-    assignment_expr_ast_bytecode_generate(bc_gen, ast->assignment);
+    enum BYTECODE_GENERATOR_CODES r = assignment_expr_ast_bytecode_generate(bc_gen, ast->assignment);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }
 
     idx = local_variable_index(bc_gen, ast->new_var_name->ident);
 
     if ((idx != -1) && (bc_gen->locals[idx].depth == bc_gen->scope_depth)) {
-        
+        set_bytecode_generator_error(bc_gen, ast->line, ast->pos, BYTECODE_GENERATOR_ALREADY_HAVE_LOCAL_VARIABLE);
+        return BYTECODE_GENERATOR_ALREADY_HAVE_LOCAL_VARIABLE;
     }
 
     lv = create_local_variable(ast->new_var_name->ident, bc_gen->scope_depth);
@@ -440,17 +535,20 @@ static enum BYTECODE_GENERATOR_CODES decl_stmt_ast_bytecode_generate(bytecode_ge
 }
 
 static enum BYTECODE_GENERATOR_CODES assign_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct ASSIGN_STMT_AST*ast)
-{   
-    int idx;
-    
-    assignment_expr_ast_bytecode_generate(bc_gen, ast->assignment);
+{
+    enum BYTECODE_GENERATOR_CODES r = assignment_expr_ast_bytecode_generate(bc_gen, ast->assignment);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }    
 
-    return variabe_ast_bytecode_generate_inner(bc_gen, ast->var_name, 1);
+    return variable_ast_bytecode_generate_inner(bc_gen, ast->var_name, 1);
 }
 
 enum BYTECODE_GENERATOR_CODES function_call_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct FUNCTION_CALL_STMT_AST*ast)
 {
     /* TODO */
+    PREFIX_UNUSED(bc_gen);
+    PREFIX_UNUSED(ast);
     
     return BYTECODE_GENERATOR_OK;
 }
@@ -476,16 +574,24 @@ static void patch_jump(bytecode_generator_type_t bc_gen, size_t offset)
 static enum BYTECODE_GENERATOR_CODES if_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct IF_STMT_AST*ast, int*loop_start_idx,
                                                                    int**loop_exit_idxs, size_t*loop_exit_idxs_len, size_t*loop_exit_idxs_cap)
 {
+    enum BYTECODE_GENERATOR_CODES r;
+    
     int if_idx;
     int else_idx;
     
-    logical_or_expr_ast_bytecode_generate(bc_gen, ast->condition);
+    r = logical_or_expr_ast_bytecode_generate(bc_gen, ast->condition);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }    
 
     if_idx = emit_jump(bc_gen, BC_OP_JUMP_IF_FALSE);
     PUSH_BACK(bc_gen->bc->op_codes, BC_OP_POP);
 
-    body_ast_bytecode_generate(bc_gen, ast->if_body, loop_start_idx,
-                               loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
+    r = body_ast_bytecode_generate(bc_gen, ast->if_body, loop_start_idx,
+                                   loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }    
 
     else_idx = emit_jump(bc_gen, BC_OP_JUMP);
 
@@ -493,8 +599,11 @@ static enum BYTECODE_GENERATOR_CODES if_stmt_ast_bytecode_generate(bytecode_gene
     PUSH_BACK(bc_gen->bc->op_codes, BC_OP_POP);
 
     if (ast->else_body != NULL) {
-        body_ast_bytecode_generate(bc_gen, ast->else_body, loop_start_idx,
-                                   loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
+        r = body_ast_bytecode_generate(bc_gen, ast->else_body, loop_start_idx,
+                                       loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
+        if (r != BYTECODE_GENERATOR_OK) {
+            return r;
+        }
     }
 
     patch_jump(bc_gen, else_idx);
@@ -515,6 +624,8 @@ static void emit_loop(bytecode_generator_type_t bc_gen, size_t loop_start)
 
 static enum BYTECODE_GENERATOR_CODES while_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct WHILE_STMT_AST*ast)
 {
+    enum BYTECODE_GENERATOR_CODES r;
+    
     size_t i;
     
     int loop_start_idx;
@@ -525,13 +636,19 @@ static enum BYTECODE_GENERATOR_CODES while_stmt_ast_bytecode_generate(bytecode_g
 
     loop_start_idx = bc_gen->bc->op_codes_len;
     
-    logical_or_expr_ast_bytecode_generate(bc_gen, ast->condition);
+    r = logical_or_expr_ast_bytecode_generate(bc_gen, ast->condition);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }
 
     PUSH_BACK(loop_exit_idxs, emit_jump(bc_gen, BC_OP_JUMP_IF_FALSE));
     PUSH_BACK(bc_gen->bc->op_codes, BC_OP_POP);
 
-    body_ast_bytecode_generate(bc_gen, ast->body, &loop_start_idx,
-                               &loop_exit_idxs, &loop_exit_idxs_len, &loop_exit_idxs_cap);
+    r = body_ast_bytecode_generate(bc_gen, ast->body, &loop_start_idx,
+                                   &loop_exit_idxs, &loop_exit_idxs_len, &loop_exit_idxs_cap);
+    if (r != BYTECODE_GENERATOR_OK) {
+        return r;
+    }    
 
     emit_loop(bc_gen, loop_start_idx);
 
@@ -555,7 +672,8 @@ static enum BYTECODE_GENERATOR_CODES break_stmt_ast_bytecode_generate(bytecode_g
     PREFIX_UNUSED(ast);
 
     if (loop_exit_idxs == NULL) {
-        
+        set_bytecode_generator_error(bc_gen, ast->line, ast->pos, BYTECODE_GENERATOR_INVALID_BREAK);
+        return BYTECODE_GENERATOR_INVALID_BREAK;
     }
 
     loop_exit_idx = emit_jump(bc_gen, BC_OP_JUMP);
@@ -570,7 +688,8 @@ static enum BYTECODE_GENERATOR_CODES continue_stmt_ast_bytecode_generate(bytecod
     PREFIX_UNUSED(ast);
 
     if (loop_start_idx == NULL) {
-        
+        set_bytecode_generator_error(bc_gen, ast->line, ast->pos, BYTECODE_GENERATOR_INVALID_CONTINUE);
+        return BYTECODE_GENERATOR_INVALID_CONTINUE;
     }
 
     emit_loop(bc_gen, (*loop_start_idx));
@@ -578,10 +697,25 @@ static enum BYTECODE_GENERATOR_CODES continue_stmt_ast_bytecode_generate(bytecod
     return BYTECODE_GENERATOR_OK;
 }
 
+static enum BYTECODE_GENERATOR_CODES append_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct APPEND_STMT_AST*ast)
+{
+
+    return BYTECODE_GENERATOR_OK;
+}
+
+static enum BYTECODE_GENERATOR_CODES delete_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct DELETE_STMT_AST*ast)
+{
+
+    return BYTECODE_GENERATOR_OK;
+}
+
 static enum BYTECODE_GENERATOR_CODES return_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct RETURN_STMT_AST*ast)
 {
     if (ast->result != NULL) {
-        assignment_expr_ast_bytecode_generate(bc_gen, ast->result);
+        enum BYTECODE_GENERATOR_CODES r = assignment_expr_ast_bytecode_generate(bc_gen, ast->result);
+        if (r != BYTECODE_GENERATOR_OK) {
+            return r;
+        }
     }
 
     PUSH_BACK(bc_gen->bc->op_codes, BC_OP_RETURN);
@@ -592,31 +726,39 @@ static enum BYTECODE_GENERATOR_CODES return_stmt_ast_bytecode_generate(bytecode_
 static enum BYTECODE_GENERATOR_CODES stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct STMT_AST*ast, int*loop_start_idx,
                                                                 int**loop_exit_idxs, size_t*loop_exit_idxs_len, size_t*loop_exit_idxs_cap)
 {
+    enum BYTECODE_GENERATOR_CODES r;
+    
     switch (ast->type) {
     case AST_STMT_TYPE_DECL:
-        decl_stmt_ast_bytecode_generate(bc_gen, ast->decl_stmt);
+        r = decl_stmt_ast_bytecode_generate(bc_gen, ast->decl_stmt);
         break;
     case AST_STMT_TYPE_ASSIGN:
-        assign_stmt_ast_bytecode_generate(bc_gen, ast->assign_stmt);
+        r = assign_stmt_ast_bytecode_generate(bc_gen, ast->assign_stmt);
         break;
     case AST_STMT_TYPE_FUNCTION_CALL:
-        function_call_stmt_ast_bytecode_generate(bc_gen, ast->function_call_stmt);
+        r = function_call_stmt_ast_bytecode_generate(bc_gen, ast->function_call_stmt);
         break;
     case AST_STMT_TYPE_IF:
-        if_stmt_ast_bytecode_generate(bc_gen, ast->if_stmt, loop_start_idx,
-                                      loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
+        r = if_stmt_ast_bytecode_generate(bc_gen, ast->if_stmt, loop_start_idx,
+                                          loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
         break;
     case AST_STMT_TYPE_WHILE:
-        while_stmt_ast_bytecode_generate(bc_gen, ast->while_stmt);
+        r = while_stmt_ast_bytecode_generate(bc_gen, ast->while_stmt);
         break;
     case AST_STMT_TYPE_BREAK:
-        break_stmt_ast_bytecode_generate(bc_gen, ast->break_stmt, loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
+        r = break_stmt_ast_bytecode_generate(bc_gen, ast->break_stmt, loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
         break;
     case AST_STMT_TYPE_CONTINUE:
-        continue_stmt_ast_bytecode_generate(bc_gen, ast->continue_stmt, loop_start_idx);
+        r = continue_stmt_ast_bytecode_generate(bc_gen, ast->continue_stmt, loop_start_idx);
         break;
+    case AST_STMT_TYPE_APPEND:
+        r = append_stmt_ast_bytecode_generate(bc_gen, ast->append_stmt);
+        break;
+    case AST_STMT_TYPE_DELETE:
+        r = delete_stmt_ast_bytecode_generate(bc_gen, ast->delete_stmt);
+        break;        
     case AST_STMT_TYPE_RETURN:
-        return_stmt_ast_bytecode_generate(bc_gen, ast->return_stmt);
+        r = return_stmt_ast_bytecode_generate(bc_gen, ast->return_stmt);
         break;
     default:
         fprintf(stderr, "Invalid STMT_AST type: %d\n", ast->type);
@@ -624,19 +766,22 @@ static enum BYTECODE_GENERATOR_CODES stmt_ast_bytecode_generate(bytecode_generat
         break;
     }
 
-    return BYTECODE_GENERATOR_OK;    
+    return r;    
 }
 
 static enum BYTECODE_GENERATOR_CODES body_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct BODY_AST*ast, int*loop_start_idx,
                                                                 int**loop_exit_idxs, size_t*loop_exit_idxs_len, size_t*loop_exit_idxs_cap)
-{
+{    
     size_t i;
 
     bc_gen->scope_depth++;
 
     for (i = 0; i < ast->stmts_len; i++) {
-        stmt_ast_bytecode_generate(bc_gen, ast->stmts[i], loop_start_idx,
-                                   loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
+        enum BYTECODE_GENERATOR_CODES r = stmt_ast_bytecode_generate(bc_gen, ast->stmts[i], loop_start_idx,
+                                                                     loop_exit_idxs, loop_exit_idxs_len, loop_exit_idxs_cap);
+        if (r != BYTECODE_GENERATOR_OK) {
+            return r;
+        }
     }
 
     bc_gen->scope_depth--;
@@ -655,12 +800,15 @@ enum BYTECODE_GENERATOR_CODES bytecode_generator_generate(bytecode_generator_typ
 {   
     /* now only one function without arguments is supported. */
     struct FUNCTION_DECL_AST*f = bc_gen->ast->functions[0];
-    body_ast_bytecode_generate(bc_gen, f->body, NULL,
-                               NULL, NULL, NULL);
+    enum BYTECODE_GENERATOR_CODES r = body_ast_bytecode_generate(bc_gen, f->body, NULL,
+                                                                 NULL, NULL, NULL);
+    if (r != BYTECODE_GENERATOR_OK) {
+        bytecode_free(bc_gen->bc);
+        return r;
+    }
 
     (*bc) = bc_gen->bc;
-
-    return BYTECODE_GENERATOR_OK;    
+    return BYTECODE_GENERATOR_OK;
 }
 
 void bytecode_generator_free(bytecode_generator_type_t bc_gen)
@@ -767,6 +915,11 @@ void dump_bytecode_to_xml_file(FILE*f, const bytecode_type_t bc)
             i--;
             fprintf(f, "</op>\n");
             break;
+
+        case BC_OP_APPEND:
+        case BC_OP_DELETE:
+            break;
+            
         case BC_OP_LOGICAL_OR:
             fprintf(f, "\t\t<op>LOGICAL_OR</op>\n");
             break;
@@ -815,6 +968,14 @@ void dump_bytecode_to_xml_file(FILE*f, const bytecode_type_t bc)
             fprintf(f, "\t\t<op>NEGATE</op>\n");
             break;
 
+        case BC_OP_LEN:
+            fprintf(f, "\t\t<op>LEN</op>\n");
+            break;
+        case BC_OP_HAS_PROPERTY:
+            i++;
+            fprintf(f, "\t\t<op>HAS_PROPERTY %zu</op>\n", bc->op_codes[i]);
+            break;            
+
         case BC_OP_JUMP_IF_FALSE:
             i++;
             fprintf(f, "\t\t<op>JUMP_IF_FALSE %d</op>\n", (int) bc->op_codes[i]);
@@ -836,9 +997,46 @@ void dump_bytecode_to_xml_file(FILE*f, const bytecode_type_t bc)
     fprintf(f, "</bytecode>\n");
 }
 
+struct BYTECODE_ERROR bytecode_generator_get_error(const bytecode_generator_type_t bc_gen)
+{
+    return bc_gen->err;
+}
+
+void print_bytecode_error(const struct BYTECODE_ERROR*err)
+{
+    const char*error_str = NULL;
+
+    switch (err->code) {
+    case BYTECODE_GENERATOR_OK: {
+        error_str = "ok?!";
+        break;        
+    }
+    case BYTECODE_GENERATOR_NO_LOCAL_VARIABLE: {
+        error_str = "no local variable!";
+        break;
+    }
+    case BYTECODE_GENERATOR_ALREADY_HAVE_LOCAL_VARIABLE: {
+        error_str = "already have local variable!";
+        break;
+    }
+    case BYTECODE_GENERATOR_INVALID_BREAK: {
+        error_str = "break outside of while!";
+        break;
+    }
+    case BYTECODE_GENERATOR_INVALID_CONTINUE: {
+        error_str = "continue outside of while!";
+        break;
+    }
+    }
+    
+    fprintf(stderr, "%zu:%zu: error: %s\n",
+            err->pos.line, err->pos.pos, error_str);
+}
+
 void bytecode_free(bytecode_type_t bc)
 {
     SAFE_FREE(bc->op_codes);
     SAFE_FREE(bc->constant_pool);
     SAFE_FREE(bc);
 }
+

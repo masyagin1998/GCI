@@ -5,33 +5,37 @@
 #include <stdio.h>
 #include <string.h>
 
-const char function_keyword[] = "function";
-const char let_keyword[]      = "let";
-const char if_keyword[]       = "if";
-const char else_keyword[]     = "else";
-const char while_keyword[]    = "while";
-const char break_keyword[]    = "break";
-const char continue_keyword[] = "continue";
-const char append_keyword[]   = "append";
-const char delete_keyword[]   = "delete";
-const char return_keyword[]   = "return";
+const char function_keyword[]     = "function";
+const char let_keyword[]          = "let";
+const char if_keyword[]           = "if";
+const char else_keyword[]         = "else";
+const char while_keyword[]        = "while";
+const char break_keyword[]        = "break";
+const char continue_keyword[]     = "continue";
+const char append_keyword[]       = "append";
+const char delete_keyword[]       = "delete";
+const char has_property_keyword[] = "has_property";
+const char len_keyword[]          = "len";
+const char return_keyword[]       = "return";
 
-const size_t function_keyword_len = sizeof(function_keyword) - 1;
-const size_t let_keyword_len      = sizeof(let_keyword) - 1;
-const size_t if_keyword_len       = sizeof(if_keyword) - 1;
-const size_t else_keyword_len     = sizeof(else_keyword) - 1;
-const size_t while_keyword_len    = sizeof(while_keyword) - 1;
-const size_t break_keyword_len    = sizeof(break_keyword) - 1;
-const size_t continue_keyword_len = sizeof(continue_keyword) - 1;
-const size_t append_keyword_len   = sizeof(append_keyword) - 1;
-const size_t delete_keyword_len   = sizeof(delete_keyword) - 1;
-const size_t return_keyword_len   = sizeof(return_keyword) - 1;
+const size_t function_keyword_len     = sizeof(function_keyword) - 1;
+const size_t let_keyword_len          = sizeof(let_keyword) - 1;
+const size_t if_keyword_len           = sizeof(if_keyword) - 1;
+const size_t else_keyword_len         = sizeof(else_keyword) - 1;
+const size_t while_keyword_len        = sizeof(while_keyword) - 1;
+const size_t break_keyword_len        = sizeof(break_keyword) - 1;
+const size_t continue_keyword_len     = sizeof(continue_keyword) - 1;
+const size_t append_keyword_len       = sizeof(append_keyword) - 1;
+const size_t delete_keyword_len       = sizeof(delete_keyword) - 1;
+const size_t has_property_keyword_len = sizeof(has_property_keyword) - 1;
+const size_t len_keyword_len          = sizeof(len_keyword) - 1;
+const size_t return_keyword_len       = sizeof(return_keyword) - 1;
 
 struct LEXER
 {
-    char     *program;
+    char   *program;
     size_t program_len;
-    char     program_name[256];
+    char   program_name[256];
 
     struct POS cur;
 };
@@ -43,7 +47,7 @@ lexer_type_t create_lexer()
     return ptr;
 }
 
-void lexer_conf(lexer_type_t lexer, const char*fname)
+void lexer_conf_from_file(lexer_type_t lexer, const char*fname)
 {
     FILE*f;
 
@@ -74,6 +78,21 @@ void lexer_conf(lexer_type_t lexer, const char*fname)
     lexer->cur.program_len = lexer->program_len;
 
     fclose(f);
+}
+
+void lexer_conf_from_buf(lexer_type_t lexer, const char*text, const char*program_name)
+{
+    strncpy(lexer->program_name, program_name, sizeof(lexer->program_name));
+
+    lexer->program_len = strlen(text);
+
+    SAFE_MALLOC(lexer->program, lexer->program_len + 1);
+
+    strncpy(lexer->program, text, lexer->program_len + 1);
+    lexer->program[lexer->program_len] = '\0';
+
+    lexer->cur.program = lexer->program;
+    lexer->cur.program_len = lexer->program_len;
 }
 
 void lexer_next_token(lexer_type_t lexer, struct TOKEN**tok)
@@ -111,7 +130,9 @@ void lexer_next_token(lexer_type_t lexer, struct TOKEN**tok)
         case 'l': {
             if (pos_check_keyword(cur, let_keyword, let_keyword_len)) {
                 token_read_keyword(tok, cur, TOKEN_TYPE_LET, let_keyword, let_keyword_len);   
-            } else {
+            } else if (pos_check_keyword(cur, len_keyword, len_keyword_len)) {
+                token_read_keyword(tok, cur, TOKEN_TYPE_LEN, len_keyword, len_keyword_len);
+            }else {
                 goto eat_ident;
             }
             break;
@@ -126,7 +147,7 @@ void lexer_next_token(lexer_type_t lexer, struct TOKEN**tok)
         }
         case 'e': {
             if (pos_check_keyword(cur, else_keyword, else_keyword_len)) {
-                token_read_keyword(tok, cur, TOKEN_TYPE_ELSE, else_keyword, else_keyword_len);   
+                token_read_keyword(tok, cur, TOKEN_TYPE_ELSE, else_keyword, else_keyword_len);
             } else {
                 goto eat_ident;
             }
@@ -171,7 +192,15 @@ void lexer_next_token(lexer_type_t lexer, struct TOKEN**tok)
                 goto eat_ident;
             }
             break;
-        }            
+        }
+        case 'h': {
+            if (pos_check_keyword(cur, has_property_keyword, has_property_keyword_len)) {
+                token_read_keyword(tok, cur, TOKEN_TYPE_HAS_PROPERTY, has_property_keyword, has_property_keyword_len);
+            } else {
+                goto eat_ident;
+            }
+            break;
+        }
         case 'r': {
             if (pos_check_keyword(cur, return_keyword, return_keyword_len)) {
                 token_read_keyword(tok, cur, TOKEN_TYPE_RETURN, return_keyword, return_keyword_len);

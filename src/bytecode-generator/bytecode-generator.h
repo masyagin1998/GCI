@@ -5,17 +5,16 @@
 
 enum BYTECODE_GENERATOR_CODES
 {
-    BYTECODE_GENERATOR_OK = 0,
-};
-
-struct BYTECODE_POS {
-    size_t line;
-    size_t pos;
+    BYTECODE_GENERATOR_OK                          =  0,
+    BYTECODE_GENERATOR_NO_LOCAL_VARIABLE           = -1,
+    BYTECODE_GENERATOR_ALREADY_HAVE_LOCAL_VARIABLE = -2,
+    BYTECODE_GENERATOR_INVALID_BREAK               = -3,
+    BYTECODE_GENERATOR_INVALID_CONTINUE            = -4,
 };
 
 struct BYTECODE_ERROR
 {
-    struct BYTECODE_POS pos;
+    struct POS pos;
     enum BYTECODE_GENERATOR_CODES code;
 };
 
@@ -30,6 +29,10 @@ void bytecode_generator_conf(bytecode_generator_type_t bc_gen, struct UNIT_AST*a
 struct BYTECODE;
 
 enum BYTECODE_GENERATOR_CODES bytecode_generator_generate(bytecode_generator_type_t bc_gen, struct BYTECODE**bc);
+
+struct BYTECODE_ERROR bytecode_generator_get_error(const bytecode_generator_type_t bc_gen);
+
+void print_bytecode_error(const struct BYTECODE_ERROR*be);
 
 void bytecode_generator_free(bytecode_generator_type_t bc);
 
@@ -52,10 +55,13 @@ enum BC_OP_CODES
     BC_OP_CREATE_OBJ,    /* create object in heap.        */
     BC_OP_INIT_OBJ_PROP, /* initialize object's property. */
 
-    BC_OP_CREATE_ARR,    /* create array in heap.         */
+    BC_OP_CREATE_ARR, /* create array in heap.         */
 
-    BC_OP_GET_HEAP,      /* get heap variable value.      */
-    BC_OP_SET_HEAP,      /* set heap variable value.      */
+    BC_OP_GET_HEAP, /* get heap variable value.      */
+    BC_OP_SET_HEAP, /* set heap variable value.      */
+
+    BC_OP_APPEND, /* push back variable to array. */
+    BC_OP_DELETE, /* delete property from obj/delete from array by index. */
 
     BC_OP_LOGICAL_OR,  /* || */
     BC_OP_LOGICAL_AND, /* && */
@@ -76,6 +82,9 @@ enum BC_OP_CODES
     BC_OP_MULTIPLICATIVE_MOD, /* % */
 
     BC_OP_NEGATE, /* - */
+
+    BC_OP_LEN,          /* get len of array; (-1) - not array.              */
+    BC_OP_HAS_PROPERTY, /* check if property exists in obj; (-1) - not obj. */    
 
     BC_OP_JUMP_IF_FALSE, /* conditional jump.   */
     BC_OP_JUMP,          /* unconditional jump. */
@@ -131,4 +140,4 @@ void dump_bytecode_to_xml_file(FILE*f, const bytecode_type_t bc);
 
 void bytecode_free(bytecode_type_t bc);
 
-#endif  /* BYTECODE_GENERATRO_H_INCLUDED */
+#endif  /* BYTECODE_GENERATOR_H_INCLUDED */

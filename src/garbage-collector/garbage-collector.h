@@ -19,6 +19,6 @@ struct OBJECT*garbage_collector_realloc_obj(garbage_collector_type_t gc, struct 
 struct ARRAY*garbage_collector_malloc_arr(garbage_collector_type_t gc, size_t arr_len);
 struct ARRAY*garbage_collector_realloc_arr(garbage_collector_type_t gc, struct ARRAY*arr, size_t new_arr_len);
 
-void free_garbage_collector(garbage_collector_type_t gc);
+void garbage_collector_free(garbage_collector_type_t gc);
 
 #endif  /* GARBAGE_COLLECTOR_H_INCLUDED */

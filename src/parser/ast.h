@@ -96,6 +96,8 @@ enum AST_STMT_TYPE
     AST_STMT_TYPE_WHILE,
     AST_STMT_TYPE_BREAK,
     AST_STMT_TYPE_CONTINUE,
+    AST_STMT_TYPE_APPEND,
+    AST_STMT_TYPE_DELETE,
     AST_STMT_TYPE_RETURN,
 };
 
@@ -110,6 +112,8 @@ struct STMT_AST
         struct WHILE_STMT_AST*while_stmt;
         struct BREAK_STMT_AST*break_stmt;
         struct CONTINUE_STMT_AST*continue_stmt;
+        struct APPEND_STMT_AST*append_stmt;
+        struct DELETE_STMT_AST*delete_stmt;
         struct RETURN_STMT_AST*return_stmt;
     };
 
@@ -242,9 +246,34 @@ struct CONTINUE_STMT_AST*create_continue_stmt_ast(size_t line, size_t pos);
 void dump_continue_stmt_ast_to_file(FILE*f, const struct CONTINUE_STMT_AST*ast);
 void continue_stmt_ast_free(struct CONTINUE_STMT_AST*ast);
 
+struct APPEND_STMT_AST {
+    struct VARIABLE_AST*arr;
+    struct IDENT_AST*ident;
+    
+    size_t line;
+    size_t pos;
+};
+
+struct APPEND_STMT_AST*create_append_stmt_ast(struct VARIABLE_AST*arr, struct IDENT_AST*ident,
+                                              size_t line, size_t pos);
+void dump_append_stmt_ast_to_file(FILE*f, const struct APPEND_STMT_AST*ast);
+void append_stmt_ast_free(struct APPEND_STMT_AST*ast);
+
+struct DELETE_STMT_AST {
+    struct VARIABLE_AST*var;
+    struct IDENT_AST*ident;
+    
+    size_t line;
+    size_t pos;
+};
+
+struct DELETE_STMT_AST*create_delete_stmt_ast(struct VARIABLE_AST*var, struct IDENT_AST*ident, size_t line, size_t pos);
+void dump_delete_stmt_ast_to_file(FILE*f, const struct DELETE_STMT_AST*ast);
+void delete_stmt_ast_free(struct DELETE_STMT_AST*ast);
+
 /*
-return_statement = RETURN assignment_expr SEMI |
-                   RETURN SEMI
+  return_statement = RETURN assignment_expr SEMI |
+                     RETURN SEMI
 */
 
 struct RETURN_STMT_AST
@@ -567,6 +596,8 @@ void left_unary_expr_ast_free(struct LEFT_UNARY_EXPR_AST*ast);
 
 enum AST_PRIMARY_EXPR_TYPE
 {
+    AST_PRIMARY_EXPR_TYPE_HAS_PROPERTY, 
+    AST_PRIMARY_EXPR_TYPE_LEN,
     AST_PRIMARY_EXPR_TYPE_FUNCTION_CALL,
     AST_PRIMARY_EXPR_TYPE_VARIABLE,
     AST_PRIMARY_EXPR_TYPE_NUMBER,
@@ -576,6 +607,8 @@ enum AST_PRIMARY_EXPR_TYPE
 struct PRIMARY_EXPR_AST
 {
     union {
+        struct HAS_PROPERTY_EXPR_AST*has_property_expr;
+        struct LEN_EXPR_AST*len_expr;
         struct FUNCTION_CALL_AST*function_call;
         struct VARIABLE_AST*var_name;
         struct NUMBER_AST*number;
@@ -588,6 +621,39 @@ struct PRIMARY_EXPR_AST
 struct PRIMARY_EXPR_AST*create_primary_expr_ast(void*primary_expr_ptr, enum AST_PRIMARY_EXPR_TYPE type);
 void dump_primary_expr_ast_to_file(FILE*f, const struct PRIMARY_EXPR_AST*ast);
 void primary_expr_ast_free(struct PRIMARY_EXPR_AST*ast);
+
+/*
+  has_property = HAS_PROPERTY LPAREN variable COMMA IDENT RPAREN
+*/
+
+struct HAS_PROPERTY_EXPR_AST
+{
+    struct VARIABLE_AST*obj;
+    struct IDENT_AST*ident;
+
+    size_t line;
+    size_t pos;
+};
+
+struct HAS_PROPERTY_EXPR_AST*create_has_property_expr_ast(struct VARIABLE_AST*obj, struct IDENT_AST*ident, size_t line, size_t pos);
+void dump_has_property_expr_ast_to_file(FILE*f, const struct HAS_PROPERTY_EXPR_AST*ast);
+void has_property_expr_ast_free(struct HAS_PROPERTY_EXPR_AST*ast);
+
+/*
+  len_expr = LEN LPAREN variable RPAREN
+*/
+
+struct LEN_EXPR_AST
+{
+    struct VARIABLE_AST*arr;
+
+    size_t line;
+    size_t pos;    
+};
+
+struct LEN_EXPR_AST*create_len_expr_ast(struct VARIABLE_AST*arr, size_t line, size_t pos);
+void dump_len_expr_ast_to_file(FILE*f, const struct LEN_EXPR_AST*ast);
+void len_expr_ast_free(struct LEN_EXPR_AST*ast);
 
 /*
   function_call = IDENT LPAREN args_list RPAREN |

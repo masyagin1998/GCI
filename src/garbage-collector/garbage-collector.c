@@ -44,7 +44,7 @@ static void*lookup_new_location(garbage_collector_type_t gc, void*ptr)
     return (((char*) BLOCK_DATA(ptrs_map_get(&(gc->ptrs_map), o))) + 1);
 }
 
-static void run_gc_inner(garbage_collector_type_t gc, void**ptr, size_t ptr_sizemem)
+static void run_gc_inner(garbage_collector_type_t gc, void**ptr)
 {
     struct VALUE*stack = (*(gc->stack));
     struct VALUE*stack_top = (*(gc->stack_top));
@@ -85,7 +85,7 @@ static void run_gc_inner(garbage_collector_type_t gc, void**ptr, size_t ptr_size
                     obj->properties[i].val.arr_val = lookup_new_location(gc, obj->properties[i].val.arr_val);
                 }
             }
-        } else if (ptr[1] == VALUE_TYPE_ARR) {
+        } else if (ptr[0] == VALUE_TYPE_ARR) {
             size_t i;
             struct ARRAY*arr = (struct ARRAY*) (ptr + 1);
             for (i = 0; i < arr->len; i++) {
@@ -97,7 +97,13 @@ static void run_gc_inner(garbage_collector_type_t gc, void**ptr, size_t ptr_size
             }
         }
         unscanned_ptr = BLOCK_LIST_NEXT(unscanned_ptr);
-    }    
+    }
+
+    if (ptr != NULL) {
+        (*ptr) = lookup_new_location(gc, *ptr);
+    }
+
+    ptrs_map_free(&(gc->ptrs_map));
 }
 
 static void run_gc(garbage_collector_type_t gc, void**ptr, size_t ptr_sizemem)
@@ -106,7 +112,9 @@ static void run_gc(garbage_collector_type_t gc, void**ptr, size_t ptr_sizemem)
 
     int need_realloc;
 
-    run_gc_inner(gc, ptr, ptr_sizemem);
+    printf("RUN GC\n");
+
+    run_gc_inner(gc, ptr);
 
     /* check if realloc is needed. */
     need_realloc = ((gc->b.busy_list.sizemem + gc->b.busy_list.count * BLOCK_OVERHEAD) +
@@ -122,7 +130,7 @@ static void run_gc(garbage_collector_type_t gc, void**ptr, size_t ptr_sizemem)
         allocator_free_pool(&(gc->b));
         allocator_malloc_pool(&(gc->b), new_sizemem);
 
-        run_gc_inner(gc, ptr, ptr_sizemem);
+        run_gc_inner(gc, ptr);
 
         allocator_free_pool(&(gc->a));
         allocator_malloc_pool(&(gc->a), new_sizemem);
@@ -152,11 +160,14 @@ struct OBJECT*garbage_collector_malloc_obj(garbage_collector_type_t gc, size_t s
     size_t sizemem = sizeof(char) + sizeof(struct OBJECT) + sizeof(struct PROPERTY) * start_properties_cap;
     
     if ((gc->a.free_list.last != NULL) && (BLOCK_L_DATA_LEN(gc->a.free_list.last) >= (sizemem + BLOCK_OVERHEAD))) {
+        printf("from malloc obj: free: %lu, busy: %lu\n", gc->a.free_list.count, gc->a.busy_list.count);    
         return malloc_obj_force(gc, start_properties_cap, sizemem);
     }
 
     /* need garbage collection. */
     run_gc(gc, NULL, sizemem);
+
+    printf("from malloc obj: free: %lu, busy: %lu\n", gc->a.free_list.count, gc->a.busy_list.count);    
 
     return malloc_obj_force(gc, start_properties_cap, sizemem);
 }
@@ -237,7 +248,7 @@ struct OBJECT*garbage_collector_realloc_obj(garbage_collector_type_t gc, struct 
     return realloc_obj_force(gc, obj, new_properties_cap, sizemem);
 }
 
-void free_garbage_collector(garbage_collector_type_t gc)
+void garbage_collector_free(garbage_collector_type_t gc)
 {
     allocator_free_pool(&(gc->a));
     allocator_free_pool(&(gc->b));
@@ -262,11 +273,14 @@ struct ARRAY*garbage_collector_malloc_arr(garbage_collector_type_t gc, size_t ar
     size_t sizemem = sizeof(char) + sizeof(struct ARRAY) + sizeof(struct VALUE) * start_arr_cap;
     
     if ((gc->a.free_list.last != NULL) && (BLOCK_L_DATA_LEN(gc->a.free_list.last) >= (sizemem + BLOCK_OVERHEAD))) {
+        printf("from malloc arr: free: %lu, busy: %lu\n", gc->a.free_list.count, gc->a.busy_list.count);
         return malloc_arr_force(gc, start_arr_cap, sizemem);
     }
 
     /* need garbage collection. */
     run_gc(gc, NULL, sizemem);
+
+    printf("from malloc arr: free: %lu, busy: %lu\n", gc->a.free_list.count, gc->a.busy_list.count);
 
     return malloc_arr_force(gc, start_arr_cap, sizemem);
 }

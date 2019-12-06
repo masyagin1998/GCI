@@ -14,6 +14,8 @@ statement               = decl_statement |
                           while_statement |
                           break_statement |
                           continue_statement |
+                          append_statement |
+                          delete_statement |
                           return_statement
 
 decl_statement          = LET IDENT EQ assignment_expr SEMI
@@ -31,6 +33,10 @@ while_statement         = WHILE LPAREN logical_or_expr RPAREN body
 break_statement         = BREAK SEMI
 
 continue_statement      = CONTINUE SEMI
+
+append_statement        = APPEND LPAREN variable COMMA IDENT RPAREN SEMI
+
+delete_statement        = DELETE LPAREN variable COMMA IDENT RPAREN SEMI
 
 return_statement        = RETURN assignment_expr SEMI |
                           RETURN SEMI
@@ -58,11 +64,20 @@ relational_expr         = additive_expr (relational_op additive_expr)?
 relational_op           = LT | GT | LE | GE
 additive_expr           = multiplicative_expr (additive_op multiplicative_expr)*
 additive_op             = PLUS | MINUS
-multiplicative_expr     = left_unary_expr | (multiplicative_op left_unary_expr)*
+multiplicative_expr     = left_unary_expr (multiplicative_op left_unary_expr)*
 multiplicative_op       = MUL | DIV | MOD
 left_unary_expr         = left_unary_op primary_expr | primary_expr
 left_unary_op           = PLUS | MINUS
-primary_expr            = function_call | variable | NUMBER | LPAREN logical_or_expr RPAREN
+primary_expr            = has_property_expr |
+                          len_expr |
+                          function_call |
+                          variable |
+                          NUMBER |
+                          LPAREN logical_or_expr RPAREN
+
+has_property_expr       = HAS_PROPERTY LPAREN variable COMMA IDENT RPAREN
+
+len_expr                = LEN LPAREN variable RPAREN
 
 function_call           = IDENT LPAREN args_list RPAREN |
                           IDENT LPAREN RPAREN

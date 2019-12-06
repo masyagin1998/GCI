@@ -231,6 +231,12 @@ struct STMT_AST*create_stmt_ast(void*stmt_ptr, enum AST_STMT_TYPE stmt_type)
     case AST_STMT_TYPE_CONTINUE:
         stmt->continue_stmt = stmt_ptr;
         break;
+    case AST_STMT_TYPE_APPEND:
+        stmt->delete_stmt = stmt_ptr;
+        break;   
+    case AST_STMT_TYPE_DELETE:
+        stmt->append_stmt = stmt_ptr;
+        break;        
     case AST_STMT_TYPE_RETURN:
         stmt->return_stmt = stmt_ptr;
         break;
@@ -250,6 +256,8 @@ static void dump_if_stmt_ast_to_file_inner(FILE*f, const struct IF_STMT_AST*ast,
 static void dump_while_stmt_ast_to_file_inner(FILE*f, const struct WHILE_STMT_AST*ast, size_t spaces_num);
 static void dump_break_stmt_ast_to_file_inner(FILE*f, const struct BREAK_STMT_AST*ast, size_t spaces_num);
 static void dump_continue_stmt_ast_to_file_inner(FILE*f, const struct CONTINUE_STMT_AST*ast, size_t spaces_num);
+static void dump_append_stmt_ast_to_file_inner(FILE*f, const struct APPEND_STMT_AST*ast, size_t spaces_num);
+static void dump_delete_stmt_ast_to_file_inner(FILE*f, const struct DELETE_STMT_AST*ast, size_t spaces_num);
 static void dump_return_stmt_ast_to_file_inner(FILE*f, const struct RETURN_STMT_AST*ast, size_t spaces_num);
 
 static void dump_stmt_ast_to_file_inner(FILE*f, const struct STMT_AST*ast, size_t spaces_num)
@@ -273,9 +281,15 @@ static void dump_stmt_ast_to_file_inner(FILE*f, const struct STMT_AST*ast, size_
     case AST_STMT_TYPE_BREAK:
         dump_break_stmt_ast_to_file_inner(f, ast->break_stmt, spaces_num);
         break;
+    case AST_STMT_TYPE_APPEND:
+        dump_append_stmt_ast_to_file_inner(f, ast->append_stmt, spaces_num);
+        break;
     case AST_STMT_TYPE_CONTINUE:
         dump_continue_stmt_ast_to_file_inner(f, ast->continue_stmt, spaces_num);
         break;
+    case AST_STMT_TYPE_DELETE:
+        dump_delete_stmt_ast_to_file_inner(f, ast->delete_stmt, spaces_num);
+        break;        
     case AST_STMT_TYPE_RETURN:
         dump_return_stmt_ast_to_file_inner(f, ast->return_stmt, spaces_num);
         break;
@@ -314,6 +328,12 @@ void stmt_ast_free(struct STMT_AST*ast)
         break;
     case AST_STMT_TYPE_CONTINUE:
         continue_stmt_ast_free(ast->continue_stmt);
+        break;
+    case AST_STMT_TYPE_APPEND:
+        append_stmt_ast_free(ast->append_stmt);
+        break;
+    case AST_STMT_TYPE_DELETE:
+        delete_stmt_ast_free(ast->delete_stmt);
         break;        
     case AST_STMT_TYPE_RETURN:
         return_stmt_ast_free(ast->return_stmt);
@@ -595,6 +615,82 @@ __inline__ void dump_continue_stmt_ast_to_file(FILE*f, const struct CONTINUE_STM
 
 void continue_stmt_ast_free(struct CONTINUE_STMT_AST*ast)
 {
+    SAFE_FREE(ast);
+}
+
+struct APPEND_STMT_AST*create_append_stmt_ast(struct VARIABLE_AST*arr, struct IDENT_AST*ident,
+                                              size_t line, size_t pos)
+{
+    struct APPEND_STMT_AST*append_stmt;
+    SAFE_MALLOC(append_stmt, 1);
+
+    append_stmt->arr = arr;
+    append_stmt->ident = ident;
+
+    append_stmt->line = line;
+    append_stmt->pos = pos;
+
+    return append_stmt;
+}
+
+void dump_append_stmt_ast_to_file_inner(FILE*f, const struct APPEND_STMT_AST*ast, size_t spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<append_stmt line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
+    INC_SPACES_NUM();
+    dump_variable_ast_to_file_inner(f, ast->arr, spaces_num);
+    dump_ident_ast_to_file_inner(f, ast->ident, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</append_stmt>\n");
+}
+
+void dump_append_stmt_ast_to_file(FILE*f, const struct APPEND_STMT_AST*ast)
+{
+    dump_append_stmt_ast_to_file_inner(f, ast, 0);
+}
+
+void append_stmt_ast_free(struct APPEND_STMT_AST*ast)
+{
+    variable_ast_free(ast->arr);
+    ident_ast_free(ast->ident);
+
+    SAFE_FREE(ast);
+}
+
+struct DELETE_STMT_AST*create_delete_stmt_ast(struct VARIABLE_AST*var, struct IDENT_AST*ident,
+                                              size_t line, size_t pos)
+{
+    struct DELETE_STMT_AST*delete_stmt;
+    SAFE_MALLOC(delete_stmt, 1);
+
+    delete_stmt->var = var;
+    delete_stmt->ident = ident;
+
+    delete_stmt->line = line;
+    delete_stmt->pos = pos;
+
+    return delete_stmt;
+}
+
+void dump_delete_stmt_ast_to_file_inner(FILE*f, const struct DELETE_STMT_AST*ast, size_t spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<delete_stmt line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
+    INC_SPACES_NUM();
+    dump_variable_ast_to_file_inner(f, ast->var, spaces_num);
+    dump_ident_ast_to_file_inner(f, ast->ident, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</delete_stmt>\n");
+}
+
+void dump_delete_stmt_ast_to_file(FILE*f, const struct DELETE_STMT_AST*ast)
+{
+    dump_delete_stmt_ast_to_file_inner(f, ast, 0);
+}
+
+void delete_stmt_ast_free(struct DELETE_STMT_AST*ast)
+{
+    variable_ast_free(ast->var);
+    ident_ast_free(ast->ident);
+
     SAFE_FREE(ast);
 }
 
@@ -1317,6 +1413,12 @@ struct PRIMARY_EXPR_AST*create_primary_expr_ast(void*primary_expr_ptr, enum AST_
     struct PRIMARY_EXPR_AST*primary_expr;
     SAFE_MALLOC(primary_expr, 1);
     switch (type) {
+    case AST_PRIMARY_EXPR_TYPE_HAS_PROPERTY:
+        primary_expr->has_property_expr = primary_expr_ptr;
+        break;
+    case AST_PRIMARY_EXPR_TYPE_LEN:
+        primary_expr->len_expr = primary_expr_ptr;
+        break;
     case AST_PRIMARY_EXPR_TYPE_FUNCTION_CALL:
         primary_expr->function_call = primary_expr_ptr;
         break;
@@ -1338,11 +1440,19 @@ struct PRIMARY_EXPR_AST*create_primary_expr_ast(void*primary_expr_ptr, enum AST_
     return primary_expr;
 }
 
+static void dump_has_property_expr_ast_to_file_inner(FILE*f, const struct HAS_PROPERTY_EXPR_AST*ast, size_t spaces_num);
+static void dump_len_expr_ast_to_file_inner(FILE*f, const struct LEN_EXPR_AST*ast, size_t spaces_num);
 static void dump_number_ast_to_file_inner(FILE*f, const struct NUMBER_AST*ast, size_t spaces_num);
 
 static void dump_primary_expr_ast_to_file_inner(FILE*f, const struct PRIMARY_EXPR_AST*ast, size_t spaces_num)
 {
     switch (ast->type) {
+    case AST_PRIMARY_EXPR_TYPE_HAS_PROPERTY:
+        dump_has_property_expr_ast_to_file_inner(f, ast->has_property_expr, spaces_num);
+        break;
+    case AST_PRIMARY_EXPR_TYPE_LEN:
+        dump_len_expr_ast_to_file_inner(f, ast->len_expr, spaces_num);
+        break;
     case AST_PRIMARY_EXPR_TYPE_FUNCTION_CALL:
         dump_function_call_ast_to_file_inner(f, ast->function_call, spaces_num);
         break;
@@ -1370,6 +1480,12 @@ __inline__ void dump_primary_expr_ast_to_file(FILE*f, const struct PRIMARY_EXPR_
 void primary_expr_ast_free(struct PRIMARY_EXPR_AST*ast)
 {
     switch (ast->type) {
+    case AST_PRIMARY_EXPR_TYPE_HAS_PROPERTY:
+        has_property_expr_ast_free(ast->has_property_expr);
+        break;
+    case AST_PRIMARY_EXPR_TYPE_LEN:
+        len_expr_ast_free(ast->len_expr);
+        break;
     case AST_PRIMARY_EXPR_TYPE_FUNCTION_CALL:
         function_call_ast_free(ast->function_call);
         break;
@@ -1387,6 +1503,74 @@ void primary_expr_ast_free(struct PRIMARY_EXPR_AST*ast)
         exit(EXIT_FAILURE);                
         break;
     }
+    SAFE_FREE(ast);
+}
+
+struct HAS_PROPERTY_EXPR_AST*create_has_property_expr_ast(struct VARIABLE_AST*obj, struct IDENT_AST*ident,
+                                                          size_t line, size_t pos)
+{
+    struct HAS_PROPERTY_EXPR_AST*has_property;
+    SAFE_MALLOC(has_property, 1);
+    has_property->obj = obj;
+    has_property->ident = ident;
+
+    has_property->line = line;
+    has_property->pos = pos;
+
+    return has_property;
+}
+
+static void dump_has_property_expr_ast_to_file_inner(FILE*f, const struct HAS_PROPERTY_EXPR_AST*ast, size_t spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<has_property_expr line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
+    INC_SPACES_NUM();
+    dump_variable_ast_to_file_inner(f, ast->obj, spaces_num);
+    dump_ident_ast_to_file_inner(f, ast->ident, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</has_property_expr>\n");
+}
+
+__inline__ void dump_has_property_expr_ast_to_file(FILE*f, const struct HAS_PROPERTY_EXPR_AST*ast)
+{
+    dump_has_property_expr_ast_to_file_inner(f, ast, 0);
+}
+
+void has_property_expr_ast_free(struct HAS_PROPERTY_EXPR_AST*ast)
+{
+    variable_ast_free(ast->obj);
+    ident_ast_free(ast->ident);
+    SAFE_FREE(ast);
+}
+
+struct LEN_EXPR_AST*create_len_expr_ast(struct VARIABLE_AST*arr, size_t line, size_t pos)
+{
+    struct LEN_EXPR_AST*len;
+    SAFE_MALLOC(len, 1);
+    len->arr = arr;
+
+    len->line = line;
+    len->pos = pos;
+
+    return len;
+}
+
+static void dump_len_expr_ast_to_file_inner(FILE*f, const struct LEN_EXPR_AST*ast, size_t spaces_num)
+{
+    PUT_SPACES(); fprintf(f, "<len_expr line=\"%zu\" pos=\"%zu\">\n", ast->line, ast->pos);
+    INC_SPACES_NUM();
+    dump_variable_ast_to_file_inner(f, ast->arr, spaces_num);
+    DEC_SPACES_NUM();
+    PUT_SPACES(); fprintf(f, "</len_expr>\n");
+}
+
+__inline__ void dump_len_expr_ast_to_file(FILE*f, const struct LEN_EXPR_AST*ast)
+{
+    dump_len_expr_ast_to_file_inner(f, ast, 0);
+}
+
+void len_expr_ast_free(struct LEN_EXPR_AST*ast)
+{
+    variable_ast_free(ast->arr);
     SAFE_FREE(ast);
 }
 

@@ -11,7 +11,7 @@ virtual_machine_type_t create_virtual_machine();
 
 void virtual_machine_conf(virtual_machine_type_t vm, bytecode_type_t bc, size_t stack_size, size_t heap_size_b);
 
-void virtual_machine_run(virtual_machine_type_t vm);
+long long virtual_machine_run(virtual_machine_type_t vm);
 
 void virtual_machine_free(virtual_machine_type_t vm);
 

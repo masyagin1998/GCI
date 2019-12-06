@@ -1,13 +1,15 @@
-FUNCTION = function
-LET      = let
-IF       = if
-ELSE     = else
-WHILE    = while
-BREAK    = break
-CONTINUE = continue
-APPEND   = append
-DELETE   = delete
-RETURN   = return
+FUNCTION     = function
+LET          = let
+IF           = if
+ELSE         = else
+WHILE        = while
+BREAK        = break
+CONTINUE     = continue
+APPEND       = append
+DELETE       = delete
+HAS_PROPERTY = has_property
+LEN          = len
+RETURN       = return
 
 IDENT    = [a-z]([a-z]|[0-9])*
 

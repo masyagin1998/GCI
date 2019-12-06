@@ -125,7 +125,7 @@ struct ARRAY*create_arr(virtual_machine_type_t vm)
     return arr;
 }
 
-void virtual_machine_run(virtual_machine_type_t vm)
+long long virtual_machine_run(virtual_machine_type_t vm)
 {
     while (1) {
         size_t instruction = READ_BYTE();
@@ -206,7 +206,7 @@ void virtual_machine_run(virtual_machine_type_t vm)
                     }
                 } else if (hop == BC_OBJECT_FIELD) {
                     size_t key = READ_BYTE();
-                    size_t found = 0;
+                    int found = 0;
                     for (j = 0; j < val.obj_val->properties_len; j++) {
                         if (val.obj_val->properties[j].key == key) {
                             if (i < len - 1) {
@@ -272,7 +272,7 @@ void virtual_machine_run(virtual_machine_type_t vm)
                     val = val.arr_val->values[index.int_val];
                 } else if (hop == BC_OBJECT_FIELD) {
                     size_t key = READ_BYTE();
-                    size_t found = 0;
+                    int found = 0;
                     for (j = 0; j < val.obj_val->properties_len; j++) {
                         if (val.obj_val->properties[j].key == key) {
                             val = val.obj_val->properties[j].val;
@@ -398,6 +398,40 @@ void virtual_machine_run(virtual_machine_type_t vm)
             break;
         }
 
+        case BC_OP_HAS_PROPERTY: {
+            struct VALUE val = virtual_machine_stack_pop(vm);
+            size_t key = READ_BYTE();
+            struct VALUE res;
+            if (val.type == VALUE_TYPE_OBJ) {
+                size_t j;
+                int found = 0;
+                for (j = 0; j < val.obj_val->properties_len; j++) {
+                    if (val.obj_val->properties[j].key == key) {
+                        val = val.obj_val->properties[j].val;
+                        found = 1;
+                        break;
+                    }
+                }
+
+                res = create_value_from_int(found);
+            } else {
+                res = create_value_from_int(-1);
+            }
+            virtual_machine_stack_push(vm, res);
+            break;
+        }
+        case BC_OP_LEN: {
+            struct VALUE val = virtual_machine_stack_pop(vm);
+            struct VALUE res;
+            if (val.type == VALUE_TYPE_ARR) {
+                res = create_value_from_int(val.arr_val->len);
+            } else {
+                res = create_value_from_int(-1);
+            }
+            virtual_machine_stack_push(vm, res);
+            break;            
+        }
+
         case BC_OP_JUMP_IF_FALSE: {
             int offset = (int) READ_BYTE();
             struct VALUE val = *(vm->stack_top - 1);
@@ -414,8 +448,7 @@ void virtual_machine_run(virtual_machine_type_t vm)
 
         case BC_OP_RETURN: {
             struct VALUE val = virtual_machine_stack_pop(vm);
-            printf("result: %lld\n", val.int_val);
-            return;
+            return val.int_val;
             break;
         }
         }
@@ -425,6 +458,6 @@ void virtual_machine_run(virtual_machine_type_t vm)
 void virtual_machine_free(virtual_machine_type_t vm)
 {
     SAFE_FREE(vm->stack);
-    free_garbage_collector(vm->gc);
+    garbage_collector_free(vm->gc);
     SAFE_FREE(vm);
 }

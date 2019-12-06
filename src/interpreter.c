@@ -23,11 +23,16 @@ enum INTERPRETER_MODE
 #define INTERPRETER_INTERPRET_STR "interpet"
 #define INTERPRETER_TRACE_STR     "trace"
 
+#define STACKSIZE_STR "stacksize"
+#define HEAPSIZE_STR "heapsize"
+
 struct INTERPRETER_PARAMS
 {
     char in[STR_BUF_SIZE];
     char out[STR_BUF_SIZE];
     enum INTERPRETER_MODE mode;
+    size_t stacksize;
+    size_t heapsize;
 };
 
 static void print_version(char*interpreter_name)
@@ -56,17 +61,23 @@ static void print_help(char*interpreter_name)
     fprintf(stderr, "            Path to output file (stdout|stderr) (default: stdout).\n");
     fprintf(stderr, "  --mode    (-m)\n");
     fprintf(stderr, "            Mode (lex|parse|bc|trace|interpret) (default: interpret).\n");
+    fprintf(stderr, "  --stacksize\n");
+    fprintf(stderr, "            Size of stack in vars(default: 1024).\n");
+    fprintf(stderr, "  --heapsize\n");
+    fprintf(stderr, "            Size of heap in bytes (default: 1 MB).\n");
     exit(0);
 }
 
 int parse_args(int argc, char**argv, struct INTERPRETER_PARAMS*params)
 {
     struct option opts[] = {
-        {"version", 0, 0, 'v'},
-        {"help",    0, 0, 'h'},
-        {"in",      1, 0, 'i'},
-        {"out",     1, 0, 'o'},
-        {"mode",    1, 0, 'm'},
+        {"version",   0, 0, 'v'},
+        {"help",      0, 0, 'h'},
+        {"in",        1, 0, 'i'},
+        {"out",       1, 0, 'o'},
+        {"mode",      1, 0, 'm'},
+        {"stacksize", 1, 0,  0},
+        {"heapsize",  1, 0,  0},
         {0,0,0,0}
     };
 
@@ -76,6 +87,8 @@ int parse_args(int argc, char**argv, struct INTERPRETER_PARAMS*params)
     params->in[0] = '\0';
     strncpy(params->out, "stdout", sizeof(params->out));
     params->mode = INTERPRETER_INTERPRET;
+    params->stacksize = 1024;
+    params->heapsize = 1024 * 1024;
     
     while ((c = getopt_long(argc, argv, "i:o:m:vh", opts, &idx)) != -1) {
         switch (c) {
@@ -108,6 +121,13 @@ int parse_args(int argc, char**argv, struct INTERPRETER_PARAMS*params)
                 exit(EXIT_FAILURE);
             }
             break;
+        case 0: {
+            if (strcmp(STACKSIZE_STR, opts[idx].name) == 0) {
+                params->stacksize = atoll(optarg);
+            } else if (strcmp(HEAPSIZE_STR, opts[idx].name) == 0) {
+                params->heapsize = atoll(optarg);
+            }
+        }
         default:
             /* do nothing. */
             break;
@@ -138,8 +158,7 @@ void print_bytecode_result(const char*fname, const bytecode_type_t bc)
     fclose(f);
 }
 
-#define STACK_SIZE 1024
-#define HEAP_SIZE  50
+void run_tests();
 
 int main(int argc, char**argv)
 {
@@ -157,7 +176,7 @@ int main(int argc, char**argv)
     parse_args(argc, argv, &params);
 
     lexer = create_lexer();
-    lexer_conf(lexer, params.in);
+    lexer_conf_from_file(lexer, params.in);
 
     if (params.mode == INTERPRETER_LEX) {
         print_lexer_result(params.out, lexer);
@@ -192,6 +211,8 @@ int main(int argc, char**argv)
     
     r = bytecode_generator_generate(bc_gen, &bc);
     if (r != BYTECODE_GENERATOR_OK) {
+        struct BYTECODE_ERROR err = bytecode_generator_get_error(bc_gen);
+        print_bytecode_error(&err);
         unit_ast_free(unit);
         bytecode_generator_free(bc_gen);
         return 2;
@@ -209,10 +230,12 @@ int main(int argc, char**argv)
     bytecode_generator_free(bc_gen);
 
     vm = create_virtual_machine();
-    virtual_machine_conf(vm, bc, STACK_SIZE, HEAP_SIZE);
-    virtual_machine_run(vm);
+    virtual_machine_conf(vm, bc, params.stacksize, params.heapsize);
+    r = virtual_machine_run(vm);
     bytecode_free(bc);
     virtual_machine_free(vm);
+
+    printf("result: %d\n", r);
 
     return 0;
 }
