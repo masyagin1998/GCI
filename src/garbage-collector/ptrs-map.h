@@ -3,6 +3,11 @@
 
 #include <string.h>
 
+/*
+  Very simple PTRS_MAP,
+  based on key-value array.
+ */
+
 struct PTRS_MAP_ELEM
 {
     void*key;

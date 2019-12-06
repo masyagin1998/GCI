@@ -50,6 +50,8 @@ struct VIRTUAL_MACHINE
     size_t stack_cap;
 
     garbage_collector_type_t gc;
+
+    int trace;
 };
 
 virtual_machine_type_t create_virtual_machine()
@@ -59,7 +61,7 @@ virtual_machine_type_t create_virtual_machine()
     return vm;
 }
 
-void virtual_machine_conf(virtual_machine_type_t vm, bytecode_type_t bc, size_t stack_size, size_t start_heap_size_b)
+void virtual_machine_conf(virtual_machine_type_t vm, bytecode_type_t bc, size_t stack_size, size_t start_heap_size_b, int trace)
 {
     vm->bc = bc;
     vm->ip = bc->op_codes;
@@ -69,7 +71,9 @@ void virtual_machine_conf(virtual_machine_type_t vm, bytecode_type_t bc, size_t 
     vm->stack_top = vm->stack;
 
     vm->gc = create_garbage_collector();
-    garbage_collector_conf(vm->gc, start_heap_size_b, &(vm->stack), &(vm->stack_top));
+    garbage_collector_conf(vm->gc, start_heap_size_b, &(vm->stack), &(vm->stack_top), trace);
+
+    vm->trace = trace;
 }
 
 static void virtual_machine_stack_push(virtual_machine_type_t vm, struct VALUE val)
@@ -127,8 +131,20 @@ struct ARRAY*create_arr(virtual_machine_type_t vm)
 
 long long virtual_machine_run(virtual_machine_type_t vm)
 {
-    while (1) {
+    if (vm->trace) {
+        printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        printf("<trace>\n");
+    }
+    
+    while (1) {   
         size_t instruction = READ_BYTE();
+
+        if (vm->trace) {
+            printf("\t<step>OP: %zu; SS: %ld b; HS: %zu b; FB: %zu; BB: %zu</step>\n",
+                   instruction, vm->stack_top - vm->stack, vm->gc->a.sizemem,
+                   vm->gc->a.free_list.count, vm->gc->a.busy_list.count);
+        }
+        
         switch (instruction) {
         case BC_OP_POP: {
             virtual_machine_stack_pop(vm);
@@ -299,6 +315,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val || val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for OR!\n");
+                exit(1);
+            }
             virtual_machine_stack_push(vm, res);                        
             break;
         }
@@ -306,6 +326,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val && val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for AND!\n");
+                exit(1);
+            }
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -314,6 +338,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val == val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for EQEQ!\n");
+                exit(1);
+            }
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -321,6 +349,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val != val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for NEQ!\n");
+                exit(1);
+            }
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -329,6 +361,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val < val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for LT!\n");
+                exit(1);
+            }
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -336,6 +372,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val > val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for GT!\n");
+                exit(1);
+            }
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -343,6 +383,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val <= val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for LE!\n");
+                exit(1);
+            }
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -350,6 +394,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val >= val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for GE!\n");
+                exit(1);
+            }
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -358,6 +406,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val + val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for PLUS!\n");
+                exit(1);
+            }            
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -365,6 +417,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val - val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for MINUS!\n");
+                exit(1);
+            }            
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -373,6 +429,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val * val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for MUL!\n");
+                exit(1);
+            }
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -380,6 +440,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val / val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for DIV!\n");
+                exit(1);
+            }
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -387,6 +451,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             struct VALUE val1 = virtual_machine_stack_pop(vm);
             struct VALUE val2 = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(val2.int_val % val1.int_val);
+            if ((val1.type != VALUE_TYPE_INTEGER) || (val2.type != VALUE_TYPE_INTEGER)) {
+                printf("invalid value for MOD!\n");
+                exit(1);
+            }
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -394,6 +462,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
         case BC_OP_NEGATE: {
             struct VALUE val = virtual_machine_stack_pop(vm);
             struct VALUE res = create_value_from_int(-val.int_val);
+            if (val.type != VALUE_TYPE_INTEGER) {
+                printf("invalid value for NEGATE!\n");
+                exit(1);
+            }            
             virtual_machine_stack_push(vm, res);
             break;
         }
@@ -448,6 +520,9 @@ long long virtual_machine_run(virtual_machine_type_t vm)
 
         case BC_OP_RETURN: {
             struct VALUE val = virtual_machine_stack_pop(vm);
+            if (vm->trace) {
+                printf("</trace>\n");
+            }
             return val.int_val;
             break;
         }

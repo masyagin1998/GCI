@@ -1,19 +1,6 @@
 #include "garbage-collector.h"
 
-#include "allocator.h"
 #include "utils.h"
-#include "ptrs-map.h"
-
-struct GARBAGE_COLLECTOR
-{
-    struct VALUE**stack;
-    struct VALUE**stack_top;
-
-    struct ALLOCATOR a;
-    struct ALLOCATOR b;
-
-    struct PTRS_MAP ptrs_map;
-};
 
 garbage_collector_type_t create_garbage_collector()
 {
@@ -22,12 +9,14 @@ garbage_collector_type_t create_garbage_collector()
     return gc;
 }
 
-void garbage_collector_conf(garbage_collector_type_t gc, size_t sizemem_start, struct VALUE**stack, struct VALUE**stack_top)
+void garbage_collector_conf(garbage_collector_type_t gc, size_t sizemem_start, struct VALUE**stack, struct VALUE**stack_top, int trace)
 {
     gc->stack = stack;
     gc->stack_top = stack_top;
     allocator_malloc_pool(&(gc->a), sizemem_start);
     allocator_malloc_pool(&(gc->b), sizemem_start);
+
+    gc->trace = trace;
 }
 
 static void*lookup_new_location(garbage_collector_type_t gc, void*ptr)
@@ -112,7 +101,9 @@ static void run_gc(garbage_collector_type_t gc, void**ptr, size_t ptr_sizemem)
 
     int need_realloc;
 
-    printf("RUN GC\n");
+    if (gc->trace) {
+        printf("\t<info>GC</info>\n");
+    }
 
     run_gc_inner(gc, ptr);
 
@@ -160,14 +151,11 @@ struct OBJECT*garbage_collector_malloc_obj(garbage_collector_type_t gc, size_t s
     size_t sizemem = sizeof(char) + sizeof(struct OBJECT) + sizeof(struct PROPERTY) * start_properties_cap;
     
     if ((gc->a.free_list.last != NULL) && (BLOCK_L_DATA_LEN(gc->a.free_list.last) >= (sizemem + BLOCK_OVERHEAD))) {
-        printf("from malloc obj: free: %lu, busy: %lu\n", gc->a.free_list.count, gc->a.busy_list.count);    
         return malloc_obj_force(gc, start_properties_cap, sizemem);
     }
 
     /* need garbage collection. */
     run_gc(gc, NULL, sizemem);
-
-    printf("from malloc obj: free: %lu, busy: %lu\n", gc->a.free_list.count, gc->a.busy_list.count);    
 
     return malloc_obj_force(gc, start_properties_cap, sizemem);
 }
@@ -273,14 +261,11 @@ struct ARRAY*garbage_collector_malloc_arr(garbage_collector_type_t gc, size_t ar
     size_t sizemem = sizeof(char) + sizeof(struct ARRAY) + sizeof(struct VALUE) * start_arr_cap;
     
     if ((gc->a.free_list.last != NULL) && (BLOCK_L_DATA_LEN(gc->a.free_list.last) >= (sizemem + BLOCK_OVERHEAD))) {
-        printf("from malloc arr: free: %lu, busy: %lu\n", gc->a.free_list.count, gc->a.busy_list.count);
         return malloc_arr_force(gc, start_arr_cap, sizemem);
     }
 
     /* need garbage collection. */
     run_gc(gc, NULL, sizemem);
-
-    printf("from malloc arr: free: %lu, busy: %lu\n", gc->a.free_list.count, gc->a.busy_list.count);
 
     return malloc_arr_force(gc, start_arr_cap, sizemem);
 }

@@ -1565,6 +1565,7 @@ static enum PARSER_CODES return_stmt_ast_read(struct PARSER*parser, struct RETUR
 
     if ((parser->tok)->token_type != TOKEN_TYPE_SEMI) {
         r = PARSER_INVALID_TOKEN;
+        set_parser_error(parser, 1, TOKEN_TYPE_SEMI);
         goto err1;
     }
 

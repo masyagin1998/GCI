@@ -230,7 +230,7 @@ int main(int argc, char**argv)
     bytecode_generator_free(bc_gen);
 
     vm = create_virtual_machine();
-    virtual_machine_conf(vm, bc, params.stacksize, params.heapsize);
+    virtual_machine_conf(vm, bc, params.stacksize, params.heapsize, params.mode == INTERPRETER_TRACE);
     r = virtual_machine_run(vm);
     bytecode_free(bc);
     virtual_machine_free(vm);

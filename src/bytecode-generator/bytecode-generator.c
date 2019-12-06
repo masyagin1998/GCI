@@ -699,12 +699,16 @@ static enum BYTECODE_GENERATOR_CODES continue_stmt_ast_bytecode_generate(bytecod
 
 static enum BYTECODE_GENERATOR_CODES append_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct APPEND_STMT_AST*ast)
 {
+    PREFIX_UNUSED(bc_gen);
+    PREFIX_UNUSED(ast);
 
     return BYTECODE_GENERATOR_OK;
 }
 
 static enum BYTECODE_GENERATOR_CODES delete_stmt_ast_bytecode_generate(bytecode_generator_type_t bc_gen, const struct DELETE_STMT_AST*ast)
 {
+    PREFIX_UNUSED(bc_gen);
+    PREFIX_UNUSED(ast);    
 
     return BYTECODE_GENERATOR_OK;
 }

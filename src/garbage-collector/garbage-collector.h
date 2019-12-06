@@ -3,15 +3,29 @@
 
 #include "data-types.h"
 
+#include "allocator.h"
+#include "ptrs-map.h"
+
 #include <string.h>
 
-struct GARBAGE_COLLECTOR;
+struct GARBAGE_COLLECTOR
+{
+    struct VALUE**stack;
+    struct VALUE**stack_top;
+
+    struct ALLOCATOR a;
+    struct ALLOCATOR b;
+
+    struct PTRS_MAP ptrs_map;
+
+    int trace;
+};
 
 typedef struct GARBAGE_COLLECTOR* garbage_collector_type_t;
 
 garbage_collector_type_t create_garbage_collector();
 
-void garbage_collector_conf(garbage_collector_type_t gc, size_t sizemem_start, struct VALUE**stack, struct VALUE**stack_top);
+void garbage_collector_conf(garbage_collector_type_t gc, size_t sizemem_start, struct VALUE**stack, struct VALUE**stack_top, int trace);
 
 struct OBJECT*garbage_collector_malloc_obj(garbage_collector_type_t gc, size_t start_properties_num);
 struct OBJECT*garbage_collector_realloc_obj(garbage_collector_type_t gc, struct OBJECT*obj, size_t new_properties_num);
