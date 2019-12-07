@@ -98,7 +98,7 @@ void run_syntax_tests()
     printf("ALL SYNTAX TESTS PASSED!\n");
 }
 
-#define GC_TESTS_NUM 5
+#define GC_TESTS_NUM 10
 
 static const char gc_tests_fnames[GC_TESTS_NUM][MAX_FNAME_SIZE] = {
     "data/tests/gc/01.js",
@@ -106,6 +106,11 @@ static const char gc_tests_fnames[GC_TESTS_NUM][MAX_FNAME_SIZE] = {
     "data/tests/gc/03.js",
     "data/tests/gc/04.js",
     "data/tests/gc/05.js",
+    "data/tests/gc/06.js",
+    "data/tests/gc/07.js",
+    "data/tests/gc/08.js",
+    "data/tests/gc/09.js",
+    "data/tests/gc/10.js",
 };
 
 static const int gc_tests_results[GC_TESTS_NUM] = {
@@ -114,6 +119,11 @@ static const int gc_tests_results[GC_TESTS_NUM] = {
     5,
     220,
     3,
+    12345,
+    3,
+    30,
+    2,
+    66,
 };
 
 void convention() { FILE*f = file_open("conv", "w"); fclose(f); }
