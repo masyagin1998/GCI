@@ -22,8 +22,9 @@ It consists of:
 
 ```sh
 $ git clone https://github.com/masyagin1998/GCI.git
-$ cd gci
+$ cd GCI
 $ make
+$ make tests
 $ ./bin/interpreter -i data/input.js
 ```
 
