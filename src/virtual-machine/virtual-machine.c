@@ -200,9 +200,16 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             for (i = 0; i < len; i++) {
                 enum BC_HEAP_OP hop = READ_BYTE();
                 if (hop == BC_ARRAY_INDEX) {
-                    pops++;
                     size_t offset = READ_BYTE();
                     struct VALUE index = *(vm->stack_top - offset - 1);
+                    if (val.type != VALUE_TYPE_ARR) {
+                        printf("attempt to index non-array value\n");
+                        exit(1);
+                    }
+                    if (index.type != VALUE_TYPE_INTEGER) {
+                        printf("attempt to use non-integer value as array index\n");
+                        exit(1);
+                    }
                     if (index.int_val < 0) {
                         printf("invalid array index: %lld\n", index.int_val);
                         exit(1);
@@ -211,6 +218,7 @@ long long virtual_machine_run(virtual_machine_type_t vm)
                         printf("array index to unitialized data: %lld\n", index.int_val);
                         exit(1);
                     }
+                    pops++;
                     if (i < len - 1) {
                         val = val.arr_val->values[index.int_val];
                     } else if (i == len - 1) {
@@ -223,6 +231,10 @@ long long virtual_machine_run(virtual_machine_type_t vm)
                 } else if (hop == BC_OBJECT_FIELD) {
                     size_t key = READ_BYTE();
                     int found = 0;
+                    if (val.type != VALUE_TYPE_OBJ) {
+                        printf("attempt to query field of non-object value\n");
+                        exit(1);
+                    }                    
                     for (j = 0; j < val.obj_val->properties_len; j++) {
                         if (val.obj_val->properties[j].key == key) {
                             if (i < len - 1) {
@@ -274,9 +286,16 @@ long long virtual_machine_run(virtual_machine_type_t vm)
             for (i = 0; i < len; i++) {
                 enum BC_HEAP_OP hop = READ_BYTE();
                 if (hop == BC_ARRAY_INDEX) {
-                    pops++;
                     size_t offset = READ_BYTE();
                     struct VALUE index = *(vm->stack_top - offset - 1);
+                    if (val.type != VALUE_TYPE_ARR) {
+                        printf("attempt to index non-array value\n");
+                        exit(1);
+                    }
+                    if (index.type != VALUE_TYPE_INTEGER) {
+                        printf("attempt to use non-integer value as array index\n");
+                        exit(1);
+                    }                    
                     if (index.int_val < 0) {
                         printf("invalid array index: %lld\n", index.int_val);
                         exit(1);
@@ -286,9 +305,14 @@ long long virtual_machine_run(virtual_machine_type_t vm)
                         exit(1);
                     }
                     val = val.arr_val->values[index.int_val];
+                    pops++;
                 } else if (hop == BC_OBJECT_FIELD) {
                     size_t key = READ_BYTE();
                     int found = 0;
+                    if (val.type != VALUE_TYPE_OBJ) {
+                        printf("attempt to query field of non-object value\n");
+                        exit(1);
+                    }
                     for (j = 0; j < val.obj_val->properties_len; j++) {
                         if (val.obj_val->properties[j].key == key) {
                             val = val.obj_val->properties[j].val;

@@ -9,5 +9,5 @@ function test() {
 
     let d = {};
 
-    return a.a[0];
+    return a.h + b.h + c.h;
 }

@@ -113,7 +113,7 @@ static const int gc_tests_results[GC_TESTS_NUM] = {
     45,
     5,
     220,
-    228,
+    3,
 };
 
 void convention() { FILE*f = file_open("conv", "w"); fclose(f); }
