@@ -43,7 +43,9 @@ static void print_version(char*interpreter_name)
     fprintf(stderr, "It supports JavaScript-like objects, numbers, if-else-stmts and while loops.\n");
     fprintf(stderr, "Functionality:\n");
     fprintf(stderr, "  - lexer;\n");
-    fprintf(stderr, "  - parser\n;");
+    fprintf(stderr, "  - parser;\n");
+    fprintf(stderr, "  - bytecode generator;\n");
+    fprintf(stderr, "  - vm;\n");
     exit(0);
 }
 
